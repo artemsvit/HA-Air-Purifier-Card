@@ -1,6 +1,6 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import { customElement, property } from 'lit/decorators.js';
+import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 
 @customElement('ha-air-purifier-card-editor')
 export class HaAirPurifierCardEditor extends LitElement {
@@ -11,7 +11,7 @@ export class HaAirPurifierCardEditor extends LitElement {
     this._config = config;
   }
 
-  override protected render() {
+  protected render() {
     if (!this.hass || !this._config) {
       return html``;
     }
@@ -20,31 +20,23 @@ export class HaAirPurifierCardEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        <div class="option">
-          <ha-select
-            label="Entity (Required)"
-            .value=${this._config.entity}
-            @selected=${this._valueChanged}
-            @closed=${(ev: Event) => ev.stopPropagation()}
-            fixedMenuPosition
-            naturalMenuWidth
-          >
-            ${entities.map(entity => html`
-              <mwc-list-item .value=${entity}>${entity}</mwc-list-item>
-            `)}
-          </ha-select>
-        </div>
+        <ha-entity-picker
+          .hass=${this.hass}
+          .value=${this._config.entity}
+          .configValue=${'entity'}
+          .label=${'Entity (Required)'}
+          .includeDomains=${['fan']}
+          @value-changed=${this._valueChanged}
+        ></ha-entity-picker>
 
-        <div class="option">
-          <ha-textfield
-            label="Name (Optional)"
-            .value=${this._config.name || ''}
-            .configValue=${'name'}
-            @input=${this._valueChanged}
-          ></ha-textfield>
-        </div>
+        <ha-textfield
+          label="Name (Optional)"
+          .value=${this._config.name || ''}
+          .configValue=${'name'}
+          @input=${this._valueChanged}
+        ></ha-textfield>
 
-        <div class="option">
+        <div class="switches">
           <ha-formfield label="Show Name">
             <ha-switch
               .checked=${this._config.show_name !== false}
@@ -52,9 +44,7 @@ export class HaAirPurifierCardEditor extends LitElement {
               @change=${this._valueChanged}
             ></ha-switch>
           </ha-formfield>
-        </div>
 
-        <div class="option">
           <ha-formfield label="Show State">
             <ha-switch
               .checked=${this._config.show_state !== false}
@@ -62,9 +52,7 @@ export class HaAirPurifierCardEditor extends LitElement {
               @change=${this._valueChanged}
             ></ha-switch>
           </ha-formfield>
-        </div>
 
-        <div class="option">
           <ha-formfield label="Show Toolbar">
             <ha-switch
               .checked=${this._config.show_toolbar !== false}
@@ -83,33 +71,35 @@ export class HaAirPurifierCardEditor extends LitElement {
     }
 
     const target = ev.target as any;
-    if (target.configValue) {
-      if (target.value === '') {
-        const tmpConfig = { ...this._config };
-        delete tmpConfig[target.configValue];
-        this._config = tmpConfig;
-      } else {
-        this._config = {
-          ...this._config,
-          [target.configValue]: target.checked !== undefined ? target.checked : target.value,
-        };
-      }
+    const value = target.value || ev.detail?.value || target.checked;
+    const configValue = target.configValue;
+
+    if (this._config[configValue] === value) {
+      return;
     }
-    this.dispatchEvent(new CustomEvent('config-changed', { detail: { config: this._config } }));
+
+    const newConfig = {
+      ...this._config,
+      [configValue]: value,
+    };
+
+    fireEvent(this, 'config-changed', { config: newConfig });
   }
 
-  override static get styles() {
+  static get styles() {
     return css`
-      .option {
-        padding: 4px 0px;
-        cursor: pointer;
-      }
-      .row {
+      .card-config {
         display: flex;
-        margin-bottom: 12px;
+        flex-direction: column;
+        gap: 8px;
       }
-      ha-select {
-        width: 100%;
+      .switches {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      ha-switch {
+        --mdc-theme-secondary: var(--primary-color);
       }
     `;
   }
