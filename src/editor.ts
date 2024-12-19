@@ -1,46 +1,63 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property, state } from 'lit/decorators.js';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
-import type { AirPurifierCardConfig } from './ha-air-purifier-card';
-
-interface ExtendedHTMLElement extends HTMLElement {
-  configValue?: string;
-}
+import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helpers';
+import { AirPurifierCardConfig } from './types';
+import { localize } from './localize';
 
 @customElement('air-purifier-card-editor')
-export class AirPurifierCardEditor extends LitElement {
+export class AirPurifierCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: AirPurifierCardConfig;
+  @state() private _helpers?: any;
+  private _initialized = false;
 
   public setConfig(config: AirPurifierCardConfig): void {
     this._config = config;
+
+    this.loadCardHelpers();
+  }
+
+  protected override shouldUpdate(): boolean {
+    if (!this._initialized) {
+      this._initialize();
+    }
+
+    return true;
+  }
+
+  private async loadCardHelpers(): Promise<void> {
+    this._helpers = await (window as any).loadCardHelpers();
+  }
+
+  private _initialize(): void {
+    if (this.hass === undefined) return;
+    if (this._config === undefined) return;
+    if (this._helpers === undefined) return;
+
+    this._initialized = true;
   }
 
   private _valueChanged(ev: CustomEvent): void {
-    const target = ev.target as ExtendedHTMLElement;
-    if (!target) return;
+    const target = ev.target as any;
+    const configValue = target.configValue as keyof AirPurifierCardConfig;
 
-    const value = (target as any).value;
-    const configValue = target.configValue;
-    if (!configValue) return;
-
-    if (configValue.includes('.')) {
-      const [object, key] = configValue.split('.');
-      this._config = {
-        ...this._config,
-        [object]: {
-          ...(this._config[object as keyof AirPurifierCardConfig] || {}),
-          [key]: target.hasAttribute('checked') ? (target as any).checked : value,
-        },
-      };
-    } else {
-      this._config = {
-        ...this._config,
-        [configValue]: target.hasAttribute('checked') ? (target as any).checked : value,
-      };
+    if (!configValue) {
+      return;
     }
 
-    fireEvent(this, 'config-changed', { config: this._config });
+    const newConfig = {
+      ...this._config,
+      [configValue]: target.value,
+    };
+
+    if (configValue === 'show') {
+      const show = target.checked
+        ? { ...this._config.show, [target.id]: true }
+        : { ...this._config.show, [target.id]: false };
+      newConfig.show = show;
+    }
+
+    fireEvent(this, 'config-changed', { config: newConfig });
   }
 
   protected override render() {
@@ -49,110 +66,146 @@ export class AirPurifierCardEditor extends LitElement {
     }
 
     const entities = Object.keys(this.hass.states).filter(
-      (eid) => eid.split('.')[0] === 'fan'
+      (eid) => eid.split('.')[0] === 'fan',
     );
 
     return html`
       <div class="card-config">
-        <div class="values">
-          <div class="row">
-            <ha-select
-              label="Entity"
-              .value=${this._config.entity}
-              .configValue=${'entity'}
+        <div class="row">
+          <ha-select
+            .label=${localize('editor.entity')}
+            .value=${this._config.entity}
+            .configValue=${'entity'}
+            @selected=${this._valueChanged}
+            @closed=${(ev: Event) => ev.stopPropagation()}
+            .required=${true}
+          >
+            ${entities.map((entity) => {
+              return html`
+                <mwc-list-item .value=${entity}>
+                  ${entity}
+                </mwc-list-item>
+              `;
+            })}
+          </ha-select>
+        </div>
+
+        <div class="row">
+          <ha-textfield
+            .label=${localize('editor.name')}
+            .value=${this._config.name || ''}
+            .configValue=${'name'}
+            @input=${this._valueChanged}
+          ></ha-textfield>
+        </div>
+
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_name')}>
+            <ha-switch
+              .id=${'name'}
+              .checked=${this._config.show?.name !== false}
+              .configValue=${'show'}
               @change=${this._valueChanged}
-              required
-            >
-              ${entities.map((entity) => html`
-                <mwc-list-item .value=${entity}>${entity}</mwc-list-item>
-              `)}
-            </ha-select>
-          </div>
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-          <div class="row">
-            <ha-textfield
-              label="Name"
-              .value=${this._config.name || ''}
-              .configValue=${'name'}
-              @input=${this._valueChanged}
-            ></ha-textfield>
-          </div>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_state')}>
+            <ha-switch
+              .id=${'state'}
+              .checked=${this._config.show?.state !== false}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-          <div class="row">
-            <div class="checkbox-group">
-              <ha-formfield label="Show Name">
-                <ha-switch
-                  .checked=${this._config.show?.name !== false}
-                  .configValue=${'show.name'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_temperature')}>
+            <ha-switch
+              .id=${'temperature'}
+              .checked=${this._config.show?.temperature !== false}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-              <ha-formfield label="Show State">
-                <ha-switch
-                  .checked=${this._config.show?.state !== false}
-                  .configValue=${'show.state'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_humidity')}>
+            <ha-switch
+              .id=${'humidity'}
+              .checked=${this._config.show?.humidity !== false}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-              <ha-formfield label="Show Temperature">
-                <ha-switch
-                  .checked=${this._config.show?.temperature !== false}
-                  .configValue=${'show.temperature'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_speed')}>
+            <ha-switch
+              .id=${'speed'}
+              .checked=${this._config.show?.speed !== false}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-              <ha-formfield label="Show Humidity">
-                <ha-switch
-                  .checked=${this._config.show?.humidity !== false}
-                  .configValue=${'show.humidity'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_filter_life')}>
+            <ha-switch
+              .id=${'filter_life'}
+              .checked=${this._config.show?.filter_life === true}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-              <ha-formfield label="Show Speed">
-                <ha-switch
-                  .checked=${this._config.show?.speed !== false}
-                  .configValue=${'show.speed'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_light')}>
+            <ha-switch
+              .id=${'light'}
+              .checked=${this._config.show?.light === true}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-              <ha-formfield label="Show Filter Life">
-                <ha-switch
-                  .checked=${this._config.show?.filter_life !== false}
-                  .configValue=${'show.filter_life'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_child_lock')}>
+            <ha-switch
+              .id=${'child_lock'}
+              .checked=${this._config.show?.child_lock === true}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-              <ha-formfield label="Show Light">
-                <ha-switch
-                  .checked=${this._config.show?.light !== false}
-                  .configValue=${'show.light'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.show_buzzer')}>
+            <ha-switch
+              .id=${'buzzer'}
+              .checked=${this._config.show?.buzzer === true}
+              .configValue=${'show'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
 
-              <ha-formfield label="Show Child Lock">
-                <ha-switch
-                  .checked=${this._config.show?.child_lock !== false}
-                  .configValue=${'show.child_lock'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
-
-              <ha-formfield label="Show Buzzer">
-                <ha-switch
-                  .checked=${this._config.show?.buzzer !== false}
-                  .configValue=${'show.buzzer'}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
-            </div>
-          </div>
+        <div class="row">
+          <ha-formfield .label=${localize('editor.compact_view')}>
+            <ha-switch
+              .checked=${this._config.compact_view === true}
+              .configValue=${'compact_view'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
         </div>
       </div>
     `;
@@ -160,21 +213,25 @@ export class AirPurifierCardEditor extends LitElement {
 
   static override get styles() {
     return css`
-      .values {
-        padding: 16px;
-      }
-      .row {
-        margin-bottom: 16px;
-      }
-      .checkbox-group {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      .card-config {
+        display: flex;
+        flex-direction: column;
         gap: 8px;
       }
-      ha-select {
+
+      .row {
+        display: flex;
+        align-items: center;
+        padding: 8px 0;
+      }
+
+      ha-select,
+      ha-textfield {
         width: 100%;
       }
-      ha-textfield {
+
+      ha-formfield {
+        padding-right: 16px;
         width: 100%;
       }
     `;

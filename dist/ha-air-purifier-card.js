@@ -1,385 +1,258 @@
-import{LitElement as i,html as e,css as t}from"lit";import{property as o,state as a,customElement as n}from"lit/decorators.js";import{fireEvent as s,hasConfigOrEntityChanged as c}from"custom-card-helpers";import{mdiPower as r,mdiFan as l,mdiLightbulb as h,mdiLockOutline as d,mdiVolumeHigh as f,mdiThermometer as u,mdiWaterPercent as g,mdiAirFilter as p}from"@mdi/js";function v(i,e,t,o){var a,n=arguments.length,s=n<3?e:null===o?o=Object.getOwnPropertyDescriptor(e,t):o;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)s=Reflect.decorate(i,e,t,o);else for(var c=i.length-1;c>=0;c--)(a=i[c])&&(s=(n<3?a(s):n>3?a(e,t,s):a(e,t))||s);return n>3&&s&&Object.defineProperty(e,t,s),s}"function"==typeof SuppressedError&&SuppressedError;let m=class extends i{setConfig(i){this._config=i}_valueChanged(i){const e=i.target;if(!e)return;const t=e.value,o=e.configValue;if(o){if(o.includes(".")){const[i,a]=o.split(".");this._config=Object.assign(Object.assign({},this._config),{[i]:Object.assign(Object.assign({},this._config[i]||{}),{[a]:e.hasAttribute("checked")?e.checked:t})})}else this._config=Object.assign(Object.assign({},this._config),{[o]:e.hasAttribute("checked")?e.checked:t});s(this,"config-changed",{config:this._config})}}render(){var i,t,o,a,n,s,c,r,l;if(!this.hass||!this._config)return e``;const h=Object.keys(this.hass.states).filter((i=>"fan"===i.split(".")[0]));return e`
-      <div class="card-config">
-        <div class="values">
-          <div class="row">
-            <ha-select
-              label="Entity"
-              .value=${this._config.entity}
-              .configValue=${"entity"}
-              @change=${this._valueChanged}
-              required
-            >
-              ${h.map((i=>e`
-                <mwc-list-item .value=${i}>${i}</mwc-list-item>
-              `))}
-            </ha-select>
-          </div>
+import{css as e,LitElement as t,html as i}from"lit";import{property as r,state as o,customElement as n}from"lit/decorators.js";import{hasConfigOrEntityChanged as s}from"custom-card-helpers";function a(e,t,i,r){var o,n=arguments.length,s=n<3?t:null===r?r=Object.getOwnPropertyDescriptor(t,i):r;if("object"==typeof Reflect&&"function"==typeof Reflect.decorate)s=Reflect.decorate(e,t,i,r);else for(var a=e.length-1;a>=0;a--)(o=e[a])&&(s=(n<3?o(s):n>3?o(t,i,s):o(t,i))||s);return n>3&&s&&Object.defineProperty(t,i,s),s}"function"==typeof SuppressedError&&SuppressedError;const c=e`
+  :host {
+    display: flex;
+    flex-direction: column;
+    --mdc-icon-size: 24px;
+  }
 
-          <div class="row">
-            <ha-textfield
-              label="Name"
-              .value=${this._config.name||""}
-              .configValue=${"name"}
-              @input=${this._valueChanged}
-            ></ha-textfield>
-          </div>
+  ha-card {
+    flex-direction: column;
+    flex: 1;
+    padding: 12px;
+    position: relative;
+    overflow: hidden;
+  }
 
-          <div class="row">
-            <div class="checkbox-group">
-              <ha-formfield label="Show Name">
-                <ha-switch
-                  .checked=${!1!==(null===(i=this._config.show)||void 0===i?void 0:i.name)}
-                  .configValue=${"show.name"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .content {
+    flex: 1;
+    width: 100%;
+  }
 
-              <ha-formfield label="Show State">
-                <ha-switch
-                  .checked=${!1!==(null===(t=this._config.show)||void 0===t?void 0:t.state)}
-                  .configValue=${"show.state"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
 
-              <ha-formfield label="Show Temperature">
-                <ha-switch
-                  .checked=${!1!==(null===(o=this._config.show)||void 0===o?void 0:o.temperature)}
-                  .configValue=${"show.temperature"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .header .name {
+    font-size: 1.2em;
+    font-weight: 500;
+    color: var(--primary-text-color);
+  }
 
-              <ha-formfield label="Show Humidity">
-                <ha-switch
-                  .checked=${!1!==(null===(a=this._config.show)||void 0===a?void 0:a.humidity)}
-                  .configValue=${"show.humidity"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .header state-badge {
+    flex: 0 0 40px;
+  }
 
-              <ha-formfield label="Show Speed">
-                <ha-switch
-                  .checked=${!1!==(null===(n=this._config.show)||void 0===n?void 0:n.speed)}
-                  .configValue=${"show.speed"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .preview {
+    background: var(--primary-color);
+    cursor: pointer;
+    overflow: hidden;
+    position: relative;
+    border-radius: 4px;
+  }
 
-              <ha-formfield label="Show Filter Life">
-                <ha-switch
-                  .checked=${!1!==(null===(s=this._config.show)||void 0===s?void 0:s.filter_life)}
-                  .configValue=${"show.filter_life"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .preview.working {
+    background: var(--state-fan-active-color);
+  }
 
-              <ha-formfield label="Show Light">
-                <ha-switch
-                  .checked=${!1!==(null===(c=this._config.show)||void 0===c?void 0:c.light)}
-                  .configValue=${"show.light"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .preview:hover {
+    opacity: 0.9;
+  }
 
-              <ha-formfield label="Show Child Lock">
-                <ha-switch
-                  .checked=${!1!==(null===(r=this._config.show)||void 0===r?void 0:r.child_lock)}
-                  .configValue=${"show.child_lock"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
+  .preview.compact {
+    max-height: 100px;
+  }
 
-              <ha-formfield label="Show Buzzer">
-                <ha-switch
-                  .checked=${!1!==(null===(l=this._config.show)||void 0===l?void 0:l.buzzer)}
-                  .configValue=${"show.buzzer"}
-                  @change=${this._valueChanged}
-                ></ha-switch>
-              </ha-formfield>
-            </div>
-          </div>
-        </div>
-      </div>
-    `}static get styles(){return t`
-      .values {
-        padding: 16px;
-      }
-      .row {
-        margin-bottom: 16px;
-      }
-      .checkbox-group {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 8px;
-      }
-      ha-select {
-        width: 100%;
-      }
-      ha-textfield {
-        width: 100%;
-      }
-    `}};v([o({attribute:!1})],m.prototype,"hass",void 0),v([a()],m.prototype,"_config",void 0),m=v([n("air-purifier-card-editor")],m);var _=Object.freeze({__proto__:null,get AirPurifierCardEditor(){return m}});console.info("%c AIR-PURIFIER-CARD %c 1.0.3 ","color: white; background: #555555; font-weight: 700;","color: white; background: #00ff00; font-weight: 700;"),window.customCards=window.customCards||[],window.customCards.push({type:"air-purifier-card",name:"Xiaomi Air Purifier Card",description:"A beautiful card for Xiaomi Air Purifier MB3"});const b={show:{name:!0,state:!0,temperature:!0,humidity:!0,speed:!0,filter_life:!1,light:!1,child_lock:!1,buzzer:!1}},w=["Auto","Sleep","Favorite","None"],$={Silent:{name:"Silent",percentage:25,rpm:"300-400"},Low:{name:"Low",percentage:50,rpm:"400-500"},Medium:{name:"Medium",percentage:75,rpm:"500-600"},High:{name:"High",percentage:100,rpm:"600-800"}};let y=class extends i{static async getConfigElement(){return await Promise.resolve().then((function(){return _})),document.createElement("air-purifier-card-editor")}static getStubConfig(){return{entity:"fan.xiaomi_air_purifier",show:{name:!0,state:!0,temperature:!0,humidity:!0,speed:!0,filter_life:!1,light:!1,child_lock:!1,buzzer:!1}}}getCardSize(){return 3}setConfig(i){if(!i.entity||"fan"!==i.entity.split(".")[0])throw new Error("Specify an entity from within the fan domain.");this._config=Object.assign(Object.assign(Object.assign({},b),i),{show:Object.assign(Object.assign({},b.show),i.show||{})})}shouldUpdate(i){return!!i.has("_config")||c(this,i,!1)}_handlePowerClick(){if(!this.hass||!this._config)return;const i=this.hass.states[this._config.entity];i&&this.hass.callService("fan","on"===i.state?"turn_off":"turn_on",{entity_id:this._config.entity})}_handleSpeedClick(i){this.hass&&this._config&&this.hass.callService("fan","set_percentage",{entity_id:this._config.entity,percentage:$[i].percentage})}_handleModeChange(i){if(!this.hass||!this._config)return;const e=i.target.value;e&&this.hass.callService("fan","set_preset_mode",{entity_id:this._config.entity,preset_mode:e})}_handleChildLockToggle(){if(!this.hass||!this._config)return;const i=this._config.entity.replace("fan","switch").replace("air_purifier","child_lock"),e=this.hass.states[i];e&&this.hass.callService("switch","on"===e.state?"turn_off":"turn_on",{entity_id:i})}_handleLightToggle(){if(!this.hass||!this._config)return;const i=this._config.entity.replace("fan","light").replace("air_purifier","led"),e=this.hass.states[i];e&&this.hass.callService("light","on"===e.state?"turn_off":"turn_on",{entity_id:i})}_handleBuzzerToggle(){if(!this.hass||!this._config)return;const i=this._config.entity.replace("fan","switch").replace("air_purifier","buzzer"),e=this.hass.states[i];e&&this.hass.callService("switch","on"===e.state?"turn_off":"turn_on",{entity_id:i})}_getSpeedLevel(i){var e;return(null===(e=Object.entries($).find((([e,t])=>i<=t.percentage)))||void 0===e?void 0:e[0])||"High"}render(){var i,t,o,a,n,s,c,v;if(!this.hass||!this._config)return e``;const m=this.hass.states[this._config.entity];if(!m)return e`
-        <hui-warning>
-          Entity not found: ${this._config.entity}
-        </hui-warning>
-      `;const _=this._config.name||m.attributes.friendly_name||"",b=m.state,y=m.attributes.temperature||0,x=m.attributes.humidity||0,k=m.attributes.motor_speed||0,C=m.attributes.filter_life_remaining||0,z=m.attributes.pm25||0,S=m.attributes.preset_mode||"none",j=this._getSpeedLevel(k),O="on"===m.attributes.child_lock,L="on"===m.attributes.led,P="on"===m.attributes.buzzer;return e`
-      <ha-card
-        class="air-purifier-card ${"on"===b?"active":""}"
-        .header=${!1!==(null===(i=this._config.show)||void 0===i?void 0:i.name)?_:void 0}
-      >
+  .metrics {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 12px;
+    padding: 8px;
+    border-radius: 4px;
+    background: var(--card-background-color);
+  }
+
+  .metrics .metric {
+    flex: 1 1 33%;
+    min-width: 100px;
+    text-align: center;
+    margin: 8px 0;
+  }
+
+  .metrics .value {
+    font-size: 1.4em;
+    font-weight: bold;
+    line-height: 1.2;
+  }
+
+  .metrics .unit {
+    font-size: 0.8em;
+    opacity: 0.75;
+  }
+
+  .metrics .subtitle {
+    font-size: 0.8em;
+    opacity: 0.75;
+  }
+
+  .controls {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-top: 12px;
+  }
+
+  .control-button {
+    --mdc-icon-button-size: 44px;
+    margin: 6px;
+  }
+
+  .control-button.active {
+    color: var(--primary-color);
+  }
+
+  .speed-slider {
+    width: 100%;
+    margin-top: 12px;
+  }
+
+  .shortcuts {
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    margin-top: 12px;
+  }
+
+  .shortcut {
+    min-width: 50px;
+    text-align: center;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+  }
+
+  .shortcut:hover {
+    background: var(--secondary-background-color);
+  }
+
+  .shortcut .icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 24px;
+    margin-bottom: 4px;
+  }
+
+  .shortcut .label {
+    font-size: 0.8em;
+  }
+`;var l={name:"Air Purifier Card",description:"A beautiful card for Xiaomi Air Purifier MB3",version:"Version",invalid_configuration:"Invalid configuration",show_warning:"Show Warning",show_error:"Show Error"},d={invalid_config:"Invalid card configuration",missing_entity:"Entity is required",invalid_entity:"Entity must be from the fan domain"},h={on:"On",off:"Off",unavailable:"Unavailable",unknown:"Unknown"},u={auto:"Auto",sleep:"Sleep",favorite:"Favorite",none:"None"},p={silent:"Silent",low:"Low",medium:"Medium",high:"High"},m={temperature:"Temperature",humidity:"Humidity",filter_life:"Filter Life",pm25:"PM2.5",motor_speed:"Motor Speed"},f={power:"Power",light:"Light",child_lock:"Child Lock",buzzer:"Buzzer"},v={entity:"Entity",name:"Name",show_name:"Show Name",show_state:"Show State Animation",show_temperature:"Show Temperature",show_humidity:"Show Humidity",show_speed:"Show Speed",show_filter_life:"Show Filter Life",show_light:"Show Light Control",show_child_lock:"Show Child Lock",show_buzzer:"Show Buzzer",compact_view:"Compact View"},g={common:l,error:d,state:h,mode:u,speed:p,stats:m,controls:f,editor:v};const w={en:Object.freeze({__proto__:null,common:l,controls:f,default:g,editor:v,error:d,mode:u,speed:p,state:h,stats:m})},y="en";function b(e,t){return t.reduce(((e,t)=>{if(e&&"object"==typeof e&&t in e)return e[t]}),e)}function _(e,t,i){const r=(localStorage.getItem("selectedLanguage")||navigator.language.split("-")[0]||y).replace(/['"]+/g,"").replace("-","_"),o=e.split(".");let n="";try{n=b(w[r]||w[y],o)||e}catch(t){n=b(w[y],o)||e}return n}const $={Silent:{name:"Silent",percentage:25,rpm:"300-400"},Low:{name:"Low",percentage:50,rpm:"400-500"},Medium:{name:"Medium",percentage:75,rpm:"500-600"},High:{name:"High",percentage:100,rpm:"600-800"}},x=["Auto","Sleep","Favorite","None"],k={show:{name:!0,state:!0,temperature:!0,humidity:!0,speed:!0,filter_life:!1,light:!1,child_lock:!1,buzzer:!1},compact_view:!1,stats:[],shortcuts:[]};console.info("%c AIR-PURIFIER-CARD %c 1.0.0 ","color: white; background: #4CAF50; font-weight: 700;","color: #4CAF50; background: white; font-weight: 700;"),window.customCards=window.customCards||[],window.customCards.push({type:"air-purifier-card",name:"Xiaomi Air Purifier Card",description:"A beautiful card for Xiaomi Air Purifier MB3"});let S=class extends t{constructor(){super(...arguments),this.requestInProgress=!1}static get styles(){return c}static getStubConfig(){return{entity:"fan.xiaomi_air_purifier",show:{name:!0,state:!0,temperature:!0,humidity:!0,speed:!0,filter_life:!1,light:!1,child_lock:!1,buzzer:!1}}}setConfig(e){this.config=function(e){var t,i,r;if(!e)throw new Error(_("error.invalid_config"));if(!e.entity)throw new Error(_("error.missing_entity"));if("fan"!==e.entity.split(".")[0])throw new Error(_("error.invalid_entity"));return{type:"custom:air-purifier-card",entity:e.entity,name:e.name,show:Object.assign(Object.assign({},k.show),e.show||{}),compact_view:null!==(t=e.compact_view)&&void 0!==t?t:k.compact_view,stats:null!==(i=e.stats)&&void 0!==i?i:k.stats,shortcuts:null!==(r=e.shortcuts)&&void 0!==r?r:k.shortcuts}}(e)}shouldUpdate(e){return s(this,e,!1)}handleSpeedChange(e){const t=e.target.value;this.callService("fan.set_percentage",{percentage:t})}handleModeChange(e){this.callService("fan.set_preset_mode",{preset_mode:e})}handlePowerClick(){const e="on"===this.entity.state?"off":"on";this.callService(`fan.turn_${e}`,{})}handleControlClick(e,t){const i=`xiaomi_miio.fan_set_${e}`,r=t?{[e]:t}:{};this.callService(i,r)}async callService(e,t={}){if(!this.requestInProgress){this.requestInProgress=!0;try{await this.hass.callService(e.split(".")[0],e.split(".")[1],Object.assign({entity_id:this.config.entity},t))}catch(e){console.error("Error calling service:",e)}finally{this.requestInProgress=!1}}}get entity(){return this.hass.states[this.config.entity]}get currentSpeedLevel(){const e=this.entity.attributes.percentage||0;return Object.values($).find((t=>e<=t.percentage))}get currentPresetMode(){return this.entity.attributes.preset_mode||"None"}render(){var e;if(!this.config||!this.hass||!this.entity)return i``;const{show:t={},compact_view:r=!1}=this.config,o="on"===this.entity.state;return i`
+      <ha-card>
         <div class="content">
-          <div class="circle-container">
-            <div class="circle">
-              <div class="circle-info">
-                <span class="pm25-value">${z}</span>
-                <span class="pm25-label">PM2.5</span>
-              </div>
-              ${"on"===b&&!1!==(null===(t=this._config.show)||void 0===t?void 0:t.state)?e`
-                <div class="circle-animation"></div>
-              `:""}
+          ${t.name?i`
+            <div class="header">
+              <div class="name">${this.config.name||this.entity.attributes.friendly_name}</div>
+              <state-badge
+                .hass=${this.hass}
+                .stateObj=${this.entity}
+                .overrideIcon=${o?"mdi:fan":"mdi:fan-off"}
+              ></state-badge>
             </div>
+          `:""}
+
+          <div class="preview ${o?"working":""} ${r?"compact":""}">
+            <!-- Add preview content here -->
           </div>
 
-          ${"on"===b?e`
-            <div class="controls">
-              <div class="mode-select">
-                <ha-select
-                  .value=${S}
-                  @change=${this._handleModeChange}
-                  class="mode-dropdown"
-                >
-                  ${w.map((i=>e`
-                    <mwc-list-item .value=${i}>${i}</mwc-list-item>
-                  `))}
-                </ha-select>
-              </div>
-
-              <div class="button-row">
-                <ha-icon-button
-                  class="action-button"
-                  .path=${r}
-                  @click=${this._handlePowerClick}
-                  .label=${"Power"}
-                ></ha-icon-button>
-
-                ${Object.entries($).map((([i,t])=>e`
-                  <ha-icon-button
-                    class="action-button ${j===i?"active":""}"
-                    .path=${l}
-                    @click=${()=>this._handleSpeedClick(i)}
-                    .label=${t.name}
-                  ></ha-icon-button>
-                `))}
-
-                ${!1!==(null===(o=this._config.show)||void 0===o?void 0:o.light)?e`
-                  <ha-icon-button
-                    class="action-button ${L?"active":""}"
-                    .path=${h}
-                    @click=${this._handleLightToggle}
-                    .label=${"Light"}
-                  ></ha-icon-button>
-                `:""}
-
-                ${!1!==(null===(a=this._config.show)||void 0===a?void 0:a.child_lock)?e`
-                  <ha-icon-button
-                    class="action-button ${O?"active":""}"
-                    .path=${d}
-                    @click=${this._handleChildLockToggle}
-                    .label=${"Child Lock"}
-                  ></ha-icon-button>
-                `:""}
-
-                ${!1!==(null===(n=this._config.show)||void 0===n?void 0:n.buzzer)?e`
-                  <ha-icon-button
-                    class="action-button ${P?"active":""}"
-                    .path=${f}
-                    @click=${this._handleBuzzerToggle}
-                    .label=${"Buzzer"}
-                  ></ha-icon-button>
-                `:""}
-              </div>
-
-              <div class="info-row">
-                ${!1!==(null===(s=this._config.show)||void 0===s?void 0:s.temperature)?e`
-                  <div class="info-item">
-                    <ha-svg-icon .path=${u}></ha-svg-icon>
-                    <span>${y}°C</span>
-                  </div>
-                `:""}
-
-                ${!1!==(null===(c=this._config.show)||void 0===c?void 0:c.humidity)?e`
-                  <div class="info-item">
-                    <ha-svg-icon .path=${g}></ha-svg-icon>
-                    <span>${x}%</span>
-                  </div>
-                `:""}
-
-                ${!1!==(null===(v=this._config.show)||void 0===v?void 0:v.filter_life)?e`
-                  <div class="info-item">
-                    <ha-svg-icon .path=${p}></ha-svg-icon>
-                    <span>${C}%</span>
-                  </div>
-                `:""}
+          ${t.speed?i`
+            <div class="speed-slider">
+              <ha-slider
+                .min=${0}
+                .max=${100}
+                .step=${1}
+                .value=${this.entity.attributes.percentage||0}
+                .disabled=${!o}
+                @change=${this.handleSpeedChange}
+              ></ha-slider>
+              <div class="speed-level">
+                ${(null===(e=this.currentSpeedLevel)||void 0===e?void 0:e.name)||_("speed.none")}
               </div>
             </div>
-          `:e`
-            <div class="power-button">
+          `:""}
+
+          <div class="metrics">
+            ${t.temperature?i`
+              <div class="metric">
+                <div class="value">
+                  ${this.entity.attributes.temperature||0}
+                  <span class="unit">°C</span>
+                </div>
+                <div class="subtitle">${_("stats.temperature")}</div>
+              </div>
+            `:""}
+
+            ${t.humidity?i`
+              <div class="metric">
+                <div class="value">
+                  ${this.entity.attributes.humidity||0}
+                  <span class="unit">%</span>
+                </div>
+                <div class="subtitle">${_("stats.humidity")}</div>
+              </div>
+            `:""}
+
+            ${t.filter_life?i`
+              <div class="metric">
+                <div class="value">
+                  ${this.entity.attributes.filter_life_remaining||0}
+                  <span class="unit">%</span>
+                </div>
+                <div class="subtitle">${_("stats.filter_life")}</div>
+              </div>
+            `:""}
+          </div>
+
+          <div class="controls">
+            <ha-icon-button
+              class="control-button ${o?"active":""}"
+              .path=${o?"mdi:power":"mdi:power-off"}
+              @click=${this.handlePowerClick}
+            ></ha-icon-button>
+
+            ${t.light?i`
               <ha-icon-button
-                class="action-button"
-                .path=${r}
-                @click=${this._handlePowerClick}
-                .label=${"Power"}
+                class="control-button ${"on"===this.entity.attributes.led?"active":""}"
+                .path=${"mdi:lightbulb"}
+                @click=${()=>this.handleControlClick("led","on"===this.entity.attributes.led?"off":"on")}
               ></ha-icon-button>
-            </div>
-          `}
+            `:""}
+
+            ${t.child_lock?i`
+              <ha-icon-button
+                class="control-button ${"on"===this.entity.attributes.child_lock?"active":""}"
+                .path=${"mdi:lock"}
+                @click=${()=>this.handleControlClick("child_lock","on"===this.entity.attributes.child_lock?"off":"on")}
+              ></ha-icon-button>
+            `:""}
+
+            ${t.buzzer?i`
+              <ha-icon-button
+                class="control-button ${"on"===this.entity.attributes.buzzer?"active":""}"
+                .path=${"mdi:volume-high"}
+                @click=${()=>this.handleControlClick("buzzer","on"===this.entity.attributes.buzzer?"off":"on")}
+              ></ha-icon-button>
+            `:""}
+          </div>
+
+          <div class="shortcuts">
+            ${x.map((e=>i`
+              <div
+                class="shortcut ${this.currentPresetMode===e?"active":""}"
+                @click=${()=>this.handleModeChange(e)}
+              >
+                <div class="icon">
+                  <ha-icon .icon=${`mdi:${e.toLowerCase()}`}></ha-icon>
+                </div>
+                <div class="label">${_(`mode.${e.toLowerCase()}`)}</div>
+              </div>
+            `))}
+          </div>
         </div>
       </ha-card>
-    `}static get styles(){return t`
-      :host {
-        --circle-size: 120px;
-        --circle-background-color: var(--card-background-color, #fff);
-        --circle-color: var(--primary-color, #03a9f4);
-        --circle-border-color: var(--divider-color, #e0e0e0);
-      }
-
-      .air-purifier-card {
-        padding: 16px;
-      }
-
-      .content {
-        padding: 16px;
-      }
-
-      .circle-container {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 16px;
-      }
-
-      .circle {
-        position: relative;
-        width: var(--circle-size);
-        height: var(--circle-size);
-        border-radius: 50%;
-        background: var(--circle-background-color);
-        border: 2px solid var(--circle-border-color);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .circle-info {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        z-index: 1;
-      }
-
-      .pm25-value {
-        font-size: 24px;
-        font-weight: bold;
-        line-height: 1.2;
-      }
-
-      .pm25-label {
-        font-size: 12px;
-        opacity: 0.8;
-      }
-
-      .circle-animation {
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        right: -2px;
-        bottom: -2px;
-        border: 2px solid var(--circle-color);
-        border-radius: 50%;
-        border-left-color: transparent;
-        border-right-color: transparent;
-        animation: rotate 2s linear infinite;
-      }
-
-      @keyframes rotate {
-        100% {
-          transform: rotate(360deg);
-        }
-      }
-
-      .controls {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .mode-select {
-        width: 100%;
-      }
-
-      .mode-dropdown {
-        width: 100%;
-      }
-
-      .button-row {
-        display: flex;
-        justify-content: center;
-        flex-wrap: wrap;
-        gap: 8px;
-      }
-
-      .action-button {
-        --mdc-icon-button-size: 42px;
-        color: var(--secondary-text-color);
-      }
-
-      .action-button.active {
-        color: var(--primary-color);
-      }
-
-      .info-row {
-        display: flex;
-        justify-content: space-around;
-        flex-wrap: wrap;
-        gap: 16px;
-      }
-
-      .info-item {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-      }
-
-      .power-button {
-        display: flex;
-        justify-content: center;
-        margin-top: 16px;
-      }
-
-      ha-icon-button {
-        position: relative;
-      }
-
-      ha-icon-button::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        border-radius: 50%;
-        background: currentColor;
-        opacity: 0;
-        transition: opacity 0.2s ease-in-out;
-      }
-
-      ha-icon-button:hover::before {
-        opacity: 0.1;
-      }
-
-      ha-icon-button:active::before {
-        opacity: 0.2;
-      }
-    `}};v([o({attribute:!1})],y.prototype,"hass",void 0),v([a()],y.prototype,"_config",void 0),y=v([n("air-purifier-card")],y);export{y as AirPurifierCard};
+    `}};a([r({attribute:!1})],S.prototype,"hass",void 0),a([o()],S.prototype,"config",void 0),a([o()],S.prototype,"requestInProgress",void 0),S=a([n("air-purifier-card")],S);export{S as AirPurifierCard};
 //# sourceMappingURL=ha-air-purifier-card.js.map

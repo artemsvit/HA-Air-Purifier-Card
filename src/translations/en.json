@@ -1,0 +1,60 @@
+{
+  "common": {
+    "name": "Air Purifier Card",
+    "description": "A beautiful card for Xiaomi Air Purifier MB3",
+    "version": "Version",
+    "invalid_configuration": "Invalid configuration",
+    "show_warning": "Show Warning",
+    "show_error": "Show Error"
+  },
+  "error": {
+    "invalid_config": "Invalid card configuration",
+    "missing_entity": "Entity is required",
+    "invalid_entity": "Entity must be from the fan domain"
+  },
+  "state": {
+    "on": "On",
+    "off": "Off",
+    "unavailable": "Unavailable",
+    "unknown": "Unknown"
+  },
+  "mode": {
+    "auto": "Auto",
+    "sleep": "Sleep",
+    "favorite": "Favorite",
+    "none": "None"
+  },
+  "speed": {
+    "silent": "Silent",
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High"
+  },
+  "stats": {
+    "temperature": "Temperature",
+    "humidity": "Humidity",
+    "filter_life": "Filter Life",
+    "pm25": "PM2.5",
+    "motor_speed": "Motor Speed"
+  },
+  "controls": {
+    "power": "Power",
+    "light": "Light",
+    "child_lock": "Child Lock",
+    "buzzer": "Buzzer"
+  },
+  "editor": {
+    "entity": "Entity",
+    "name": "Name",
+    "show_name": "Show Name",
+    "show_state": "Show State Animation",
+    "show_temperature": "Show Temperature",
+    "show_humidity": "Show Humidity",
+    "show_speed": "Show Speed",
+    "show_filter_life": "Show Filter Life",
+    "show_light": "Show Light Control",
+    "show_child_lock": "Show Child Lock",
+    "show_buzzer": "Show Buzzer",
+    "compact_view": "Compact View"
+  }
+}
