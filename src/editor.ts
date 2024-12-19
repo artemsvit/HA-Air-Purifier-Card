@@ -1,41 +1,28 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import { HomeAssistant } from 'custom-card-helpers';
 
 @customElement('ha-air-purifier-card-editor')
 export class HaAirPurifierCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ type: Object }) private _config!: any;
-  @property({ type: Boolean }) private _configChanged = false;
+  @property({ attribute: false }) private _config!: any;
 
   public setConfig(config: any): void {
     this._config = config;
   }
 
   private _valueChanged(ev: CustomEvent): void {
-    if (!this._config || !this.hass) return;
-
-    const target = ev.target as any;
-    if (!target) return;
-
-    const value = target.value || ev.detail?.value || target.checked;
-
-    if (this._config[target.configValue] === value) {
-      return;
-    }
-
-    if (value === '') {
-      const newConfig = { ...this._config };
-      delete newConfig[target.configValue];
-      fireEvent(this, 'config-changed', { config: newConfig });
-    } else {
-      const newConfig = {
-        ...this._config,
-        [target.configValue]: value,
-      };
-      this._configChanged = true;
-      fireEvent(this, 'config-changed', { config: newConfig });
-    }
+    const config = ev.detail.value;
+    const newConfig = {
+      ...this._config,
+      ...config,
+    };
+    const event = new CustomEvent('config-changed', {
+      detail: { config: newConfig },
+      bubbles: true,
+      composed: true,
+    });
+    this.dispatchEvent(event);
   }
 
   protected render() {
@@ -43,75 +30,49 @@ export class HaAirPurifierCardEditor extends LitElement {
       return html``;
     }
 
-    const entities = Object.keys(this.hass.states).filter(
-      eid => eid.split('.')[0] === 'fan' && eid.includes('zhimi_mb3')
-    );
+    const fanEntities = Object.keys(this.hass.states)
+      .filter(entityId => entityId.startsWith('fan.'))
+      .filter(entityId => {
+        const state = this.hass.states[entityId];
+        return state.attributes.device_class === 'air_purifier' || 
+               entityId.includes('air_purifier') ||
+               entityId.includes('purifier');
+      });
+
+    const schema = [
+      {
+        name: 'entity',
+        selector: {
+          entity: {
+            domain: 'fan',
+            include_entities: fanEntities,
+          },
+        },
+      },
+      { name: 'name', selector: { text: {} } },
+      { name: 'show_animation', selector: { boolean: {} } },
+      { name: 'show_speed', selector: { boolean: {} } },
+      { name: 'show_humidity', selector: { boolean: {} } },
+      { name: 'show_temperature', selector: { boolean: {} } },
+      { name: 'show_filter_life', selector: { boolean: {} } },
+      { name: 'show_light_control', selector: { boolean: {} } },
+    ];
 
     return html`
       <ha-form
-        .schema=${[
-          { 
-            name: "entity",
-            required: true,
-            selector: {
-              entity: {
-                domain: "fan",
-                filter: (entity: string) => entity.includes('zhimi_mb3'),
-              }
-            }
-          },
-          {
-            name: "name",
-            selector: { text: {} }
-          },
-          {
-            name: "show_animation",
-            selector: { boolean: {} }
-          },
-          {
-            name: "show_speed",
-            selector: { boolean: {} }
-          },
-          {
-            name: "show_humidity",
-            selector: { boolean: {} }
-          },
-          {
-            name: "show_temperature",
-            selector: { boolean: {} }
-          },
-          {
-            name: "show_filter_life",
-            selector: { boolean: {} }
-          },
-          {
-            name: "show_light_control",
-            selector: { boolean: {} }
-          }
-        ]}
-        .data=${this._config}
         .hass=${this.hass}
+        .data=${this._config}
+        .schema=${schema}
         .computeLabel=${(schema: any) => {
-          switch (schema.name) {
-            case "entity":
-              return "Air Purifier Entity (Required)";
-            case "name":
-              return "Card Name (Optional)";
-            case "show_animation":
-              return "Show PM2.5 Animation";
-            case "show_speed":
-              return "Show Speed";
-            case "show_humidity":
-              return "Show Humidity";
-            case "show_temperature":
-              return "Show Temperature";
-            case "show_filter_life":
-              return "Show Filter Life";
-            case "show_light_control":
-              return "Show Light Control";
-            default:
-              return schema.name;
-          }
+          const key = schema.name;
+          const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+          return key === 'entity' 
+            ? 'Entity' 
+            : key === 'name'
+            ? 'Name (Optional)'
+            : key.startsWith('show_')
+            ? `Show ${capitalize(key.replace('show_', '').replace('_', ' '))}`
+            : capitalize(key.replace('_', ' '));
         }}
         @value-changed=${this._valueChanged}
       ></ha-form>
@@ -122,7 +83,7 @@ export class HaAirPurifierCardEditor extends LitElement {
     return css`
       ha-form {
         display: block;
-        padding: var(--ha-form-spacing, 16px);
+        padding: 16px;
       }
     `;
   }

@@ -34,6 +34,15 @@ const PM25_THRESHOLDS = {
   HAZARDOUS: 500.4,
 };
 
+const PRESET_MODES = {
+  None: 'None',
+  Auto: 'Auto',
+  Sleep: 'Sleep',
+  Favorite: 'Favorite'
+} as const;
+
+type PresetMode = keyof typeof PRESET_MODES;
+
 function getPM25Color(value: number): string {
   if (value <= PM25_THRESHOLDS.GOOD) return 'var(--success-color, #4CAF50)';
   if (value <= PM25_THRESHOLDS.MODERATE) return 'var(--warning-color, #FF9800)';
@@ -110,7 +119,7 @@ export class HaAirPurifierCard extends LitElement {
     if (!this.hass || !this.config) return;
 
     const mode = (e.target as any).value;
-    if (!mode || mode === 'none') return;
+    if (!mode || mode === PRESET_MODES.None) return;
 
     this.hass.callService('fan', 'set_preset_mode', {
       entity_id: this.config.entity,
@@ -124,9 +133,11 @@ export class HaAirPurifierCard extends LitElement {
     const entityId = this.config.entity.replace('fan', 'light').replace('air_purifier', 'switch_status');
     const lightEntity = this.hass.states[entityId];
     
-    this.hass.callService('light', lightEntity.state === 'on' ? 'turn_off' : 'turn_on', {
-      entity_id: entityId,
-    });
+    if (lightEntity) {
+      this.hass.callService('light', lightEntity.state === 'on' ? 'turn_off' : 'turn_on', {
+        entity_id: entityId,
+      });
+    }
   }
 
   protected render() {
@@ -166,6 +177,15 @@ export class HaAirPurifierCard extends LitElement {
     const currentSpeed = fanEntity.attributes.percentage || 0;
     const speedLabel = currentSpeed >= 90 ? 'High' : currentSpeed >= 45 ? 'Medium' : 'Low';
     const pm25Color = getPM25Color(pm25);
+    const currentMode = fanEntity.attributes.preset_mode || PRESET_MODES.None;
+
+    // Debug information
+    console.log('Fan Entity:', {
+      state,
+      attributes: fanEntity.attributes,
+      currentMode,
+      availableModes: fanEntity.attributes.preset_modes,
+    });
 
     return html`
       <ha-card>
@@ -191,38 +211,39 @@ export class HaAirPurifierCard extends LitElement {
           </div>
 
           <div class="controls-section">
-            <div class="control-group">
-              <div class="group-title">Fan Speed</div>
-              <div class="speed-buttons">
-                ${['Low', 'Medium', 'High'].map(speed => html`
-                  <ha-button
-                    .outlined=${speedLabel !== speed}
-                    .disabled=${state !== 'on'}
-                    @click=${() => this._handleSpeedClick(speed)}
-                    class="${speedLabel === speed ? 'active' : ''}"
-                  >
-                    <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
-                    ${speed}
-                  </ha-button>
-                `)}
+            ${state === 'on' ? html`
+              <div class="control-group">
+                <div class="group-title">Fan Speed</div>
+                <div class="speed-buttons">
+                  ${['Low', 'Medium', 'High'].map(speed => html`
+                    <ha-button
+                      .outlined=${speedLabel !== speed}
+                      @click=${() => this._handleSpeedClick(speed)}
+                      class="${speedLabel === speed ? 'active' : ''}"
+                    >
+                      <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
+                      ${speed}
+                    </ha-button>
+                  `)}
+                </div>
               </div>
-            </div>
 
-            <div class="control-group">
-              <div class="group-title">Mode</div>
-              <ha-select
-                .value=${fanEntity.attributes.preset_mode || 'none'}
-                @change=${this._handleModeChange}
-                .disabled=${state !== 'on'}
-                fixedMenuPosition
-                naturalMenuWidth
-              >
-                <ha-list-item .value=${'none'}>None</ha-list-item>
-                <ha-list-item .value=${'auto'}>Auto</ha-list-item>
-                <ha-list-item .value=${'sleep'}>Sleep</ha-list-item>
-                <ha-list-item .value=${'favorite'}>Favorite</ha-list-item>
-              </ha-select>
-            </div>
+              <div class="control-group">
+                <div class="group-title">Mode</div>
+                <ha-select
+                  .value=${currentMode}
+                  @change=${this._handleModeChange}
+                  fixedMenuPosition
+                  naturalMenuWidth
+                >
+                  ${Object.entries(PRESET_MODES).map(([key, value]) => html`
+                    <ha-list-item .value=${value}>
+                      ${value}
+                    </ha-list-item>
+                  `)}
+                </ha-select>
+              </div>
+            ` : ''}
 
             <div class="status-section">
               ${this.config.show_speed !== false ? html`
@@ -259,12 +280,12 @@ export class HaAirPurifierCard extends LitElement {
               ` : ''}
             </div>
 
-            ${this.config.show_light_control !== false ? html`
+            ${this.config.show_light_control !== false && lightEntity ? html`
               <div class="control-group">
                 <ha-button-toggle
                   .label=${'Indicator Light'}
-                  .value=${isLightOn}
-                  @change=${this._handleLightToggle}
+                  .pressed=${isLightOn}
+                  @click=${this._handleLightToggle}
                   .disabled=${state !== 'on'}
                 >
                   <ha-svg-icon .path=${mdiLightbulb}></ha-svg-icon>
