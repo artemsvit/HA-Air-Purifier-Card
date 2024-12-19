@@ -113,12 +113,15 @@ export class HaAirPurifierCard extends LitElement {
     });
   }
 
-  private _handleModeClick(mode: keyof typeof PRESET_MODES): void {
+  private _handleModeChange(ev: CustomEvent): void {
     if (!this.hass || !this.config) return;
+
+    const mode = (ev.target as any).value;
+    if (!mode) return;
 
     this.hass.callService('fan', 'set_preset_mode', {
       entity_id: this.config.entity,
-      preset_mode: PRESET_MODES[mode],
+      preset_mode: mode,
     });
   }
 
@@ -231,30 +234,30 @@ export class HaAirPurifierCard extends LitElement {
           </div>
 
           ${state === 'on' ? html`
-            <div class="mode-buttons">
-              ${Object.entries(PRESET_MODES).map(([mode, value]) => html`
-                <ha-button-toggle
-                  .label=${mode}
-                  ?active=${currentMode.toLowerCase() === value.toLowerCase()}
-                  @click=${() => this._handleModeClick(mode as keyof typeof PRESET_MODES)}
-                  class="mode-button"
-                >
-                  <span class="mode-label">${mode}</span>
-                </ha-button-toggle>
-              `)}
+            <div class="mode-select">
+              <ha-select
+                .label=${'Mode'}
+                .value=${currentMode}
+                @selected=${this._handleModeChange}
+                fixedMenuPosition
+                naturalMenuWidth
+              >
+                ${Object.entries(PRESET_MODES).map(([mode, value]) => html`
+                  <mwc-list-item .value=${value}>${mode}</mwc-list-item>
+                `)}
+              </ha-select>
             </div>
 
             <div class="speed-buttons">
               ${Object.entries(SPEED_LEVELS).map(([speed, data]) => html`
-                <ha-button-toggle
-                  .label=${speed}
-                  ?active=${speedLevel === speed}
+                <mwc-button 
+                  .label=${data.name}
+                  ?raised=${speedLevel === speed}
                   @click=${() => this._handleSpeedClick(speed as keyof typeof SPEED_LEVELS)}
-                  class="speed-button"
+                  class="speed-button ${speedLevel === speed ? 'active' : ''}"
                 >
-                  <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
-                  <span class="speed-label">${data.name}</span>
-                </ha-button-toggle>
+                  <ha-svg-icon .path=${mdiFan} slot="icon"></ha-svg-icon>
+                </mwc-button>
               `)}
             </div>
 
@@ -262,68 +265,76 @@ export class HaAirPurifierCard extends LitElement {
               ${this.config.show_temperature ? html`
                 <div class="info-item">
                   <ha-svg-icon .path=${mdiThermometer}></ha-svg-icon>
-                  <span class="info-value">${temperature}°C</span>
-                  <span class="info-label">Temperature</span>
+                  <div class="info-text">
+                    <span class="info-value">${temperature}°C</span>
+                    <span class="info-label">Temperature</span>
+                  </div>
                 </div>
               ` : ''}
               
               ${this.config.show_humidity ? html`
                 <div class="info-item">
                   <ha-svg-icon .path=${mdiWaterPercent}></ha-svg-icon>
-                  <span class="info-value">${humidity}%</span>
-                  <span class="info-label">Humidity</span>
+                  <div class="info-text">
+                    <span class="info-value">${humidity}%</span>
+                    <span class="info-label">Humidity</span>
+                  </div>
                 </div>
               ` : ''}
               
               ${this.config.show_speed ? html`
                 <div class="info-item">
                   <ha-svg-icon .path=${mdiSpeedometer}></ha-svg-icon>
-                  <span class="info-value">${motorSpeed}</span>
-                  <span class="info-label">RPM</span>
+                  <div class="info-text">
+                    <span class="info-value">${motorSpeed}</span>
+                    <span class="info-label">RPM</span>
+                  </div>
                 </div>
               ` : ''}
               
               ${this.config.show_filter_life ? html`
                 <div class="info-item">
                   <ha-svg-icon .path=${mdiAirFilter}></ha-svg-icon>
-                  <span class="info-value">${filterLife}%</span>
-                  <span class="info-label">Filter Life</span>
+                  <div class="info-text">
+                    <span class="info-value">${filterLife}%</span>
+                    <span class="info-label">Filter Life</span>
+                  </div>
                 </div>
               ` : ''}
             </div>
 
             <div class="control-buttons">
               ${this.config.show_child_lock ? html`
-                <ha-button-toggle
+                <mwc-button 
                   .label=${'Child Lock'}
-                  ?active=${isChildLocked}
+                  ?raised=${isChildLocked}
                   @click=${this._handleChildLockToggle}
-                  class="control-button"
+                  class="control-button ${isChildLocked ? 'active' : ''}"
                 >
-                  <ha-svg-icon .path=${mdiLockOutline}></ha-svg-icon>
-                </ha-button-toggle>
+                  <ha-svg-icon .path=${mdiLockOutline} slot="icon"></ha-svg-icon>
+                </mwc-button>
               ` : ''}
 
               ${this.config.show_light_control ? html`
-                <ha-button-toggle
+                <mwc-button 
                   .label=${'LED'}
-                  ?active=${isLightOn}
+                  ?raised=${isLightOn}
                   @click=${this._handleLightToggle}
-                  class="control-button"
+                  class="control-button ${isLightOn ? 'active' : ''}"
                 >
-                  <ha-svg-icon .path=${mdiLightbulb}></ha-svg-icon>
-                </ha-button-toggle>
+                  <ha-svg-icon .path=${mdiLightbulb} slot="icon"></ha-svg-icon>
+                </mwc-button>
               ` : ''}
 
               ${this.config.show_buzzer ? html`
-                <ha-button-toggle
+                <mwc-button 
                   .label=${'Buzzer'}
-                  ?active=${isBuzzerOn}
+                  ?raised=${isBuzzerOn}
                   @click=${this._handleBuzzerToggle}
-                  class="control-button"
+                  class="control-button ${isBuzzerOn ? 'active' : ''}"
                 >
-                  <ha-icon icon="mdi:volume-high"></ha-icon>
-                </ha-button-toggle>
+                  <ha-icon icon="mdi:volume-high" slot="icon"></ha-icon>
+                </mwc-button>
               ` : ''}
             </div>
           ` : ''}
@@ -426,74 +437,64 @@ export class HaAirPurifierCard extends LitElement {
         color: var(--disabled-text-color);
       }
 
-      .mode-buttons {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 8px;
-        margin-bottom: 16px;
-        padding: 0 8px;
+      .mode-select {
+        margin: 0 16px 16px;
       }
 
-      .mode-button {
-        --ha-button-toggle-color: var(--primary-text-color);
-        --ha-button-toggle-background: var(--secondary-background-color);
-        --ha-button-toggle-active-color: var(--text-primary-color);
-        --ha-button-toggle-active-background: var(--primary-color);
-        min-height: 48px;
+      ha-select {
         width: 100%;
-        border-radius: var(--control-radius);
-        font-size: 14px;
+        --mdc-select-fill-color: var(--secondary-background-color);
+        --mdc-theme-primary: var(--primary-color);
+        --mdc-select-ink-color: var(--primary-text-color);
+        --mdc-select-dropdown-icon-color: var(--primary-text-color);
+        --mdc-select-hover-line-color: var(--primary-color);
       }
 
       .speed-buttons {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        display: flex;
+        flex-wrap: wrap;
         gap: 8px;
-        margin-bottom: 16px;
-        padding: 0 8px;
+        margin: 0 16px 16px;
       }
 
       .speed-button {
-        --ha-button-toggle-color: var(--primary-text-color);
-        --ha-button-toggle-background: var(--secondary-background-color);
-        --ha-button-toggle-active-color: var(--text-primary-color);
-        --ha-button-toggle-active-background: var(--primary-color);
-        min-height: 48px;
-        width: 100%;
-        border-radius: var(--control-radius);
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        gap: 4px;
+        flex: 1;
+        min-width: 80px;
+        --mdc-theme-primary: var(--primary-color);
+        --mdc-theme-on-primary: var(--text-primary-color);
       }
 
-      .speed-label {
-        font-size: 12px;
+      .speed-button.active {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
       }
 
       .info-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 16px;
-        margin-bottom: 16px;
+        margin: 0 16px 16px;
         padding: 16px;
         background: var(--secondary-background-color);
-        border-radius: var(--control-radius);
+        border-radius: var(--ha-card-border-radius, 12px);
       }
 
       .info-item {
         display: flex;
-        flex-direction: column;
         align-items: center;
-        text-align: center;
-        gap: 4px;
+        gap: 12px;
+      }
+
+      .info-text {
+        display: flex;
+        flex-direction: column;
       }
 
       .info-value {
-        font-size: 20px;
+        font-size: 16px;
         font-weight: 500;
         color: var(--primary-text-color);
+        line-height: 1.2;
       }
 
       .info-label {
@@ -503,19 +504,20 @@ export class HaAirPurifierCard extends LitElement {
 
       .control-buttons {
         display: flex;
+        flex-wrap: wrap;
         justify-content: center;
-        gap: 16px;
-        padding: 0 8px;
+        gap: 8px;
+        margin: 0 16px;
       }
 
       .control-button {
-        --ha-button-toggle-color: var(--secondary-text-color);
-        --ha-button-toggle-background: var(--secondary-background-color);
-        --ha-button-toggle-active-color: var(--text-primary-color);
-        --ha-button-toggle-active-background: var(--primary-color);
-        min-width: 48px;
-        min-height: 48px;
-        border-radius: var(--control-radius);
+        --mdc-theme-primary: var(--primary-color);
+        --mdc-theme-on-primary: var(--text-primary-color);
+      }
+
+      .control-button.active {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color);
       }
 
       .not-found {

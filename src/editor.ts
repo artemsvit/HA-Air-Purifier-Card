@@ -40,108 +40,102 @@ export class HaAirPurifierCardEditor extends LitElement {
       return html``;
     }
 
-    const fanEntities = Object.keys(this.hass.states)
-      .filter(entityId => entityId.startsWith('fan.'))
-      .filter(entityId => {
-        const state = this.hass.states[entityId];
-        return state.attributes.device_class === 'air_purifier' || 
-               entityId.includes('air_purifier') ||
-               entityId.includes('purifier');
-      });
-
-    const schema = [
-      {
-        name: 'entity',
-        required: true,
-        selector: {
-          entity: {
-            domain: 'fan',
-            include_entities: fanEntities,
-          },
-        },
-      },
-      {
-        name: 'name',
-        required: false,
-        selector: { text: {} }
-      },
-      {
-        name: 'show_animation',
-        required: false,
-        default: true,
-        description: 'Show rotating animation around PM2.5 value when device is on',
-        selector: { boolean: {} }
-      },
-      {
-        name: 'show_speed',
-        required: false,
-        default: true,
-        description: 'Display fan speed in RPM',
-        selector: { boolean: {} }
-      },
-      {
-        name: 'show_humidity',
-        required: false,
-        default: true,
-        description: 'Display current relative humidity',
-        selector: { boolean: {} }
-      },
-      {
-        name: 'show_temperature',
-        required: false,
-        default: true,
-        description: 'Display current temperature',
-        selector: { boolean: {} }
-      },
-      {
-        name: 'show_filter_life',
-        required: false,
-        default: true,
-        description: 'Display remaining filter life percentage',
-        selector: { boolean: {} }
-      },
-      {
-        name: 'show_light_control',
-        required: false,
-        default: true,
-        description: 'Show button to control the indicator light',
-        selector: { boolean: {} }
-      },
-      {
-        name: 'show_child_lock',
-        required: false,
-        default: true,
-        description: 'Show button to control the child lock',
-        selector: { boolean: {} }
-      },
-      {
-        name: 'show_buzzer',
-        required: false,
-        default: true,
-        description: 'Show button to control the buzzer',
-        selector: { boolean: {} }
-      },
-    ];
+    const entities = Object.keys(this.hass.states).filter(
+      (eid) => eid.substr(0, 4) === 'fan.'
+    );
 
     return html`
       <div class="card-config">
-        <ha-form
-          .hass=${this.hass}
-          .data=${this._config}
-          .schema=${schema}
-          .computeLabel=${(schema: any) => {
-            const key = schema.name;
-            const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
-            return key === 'entity' 
-              ? 'Air Purifier Entity' 
-              : key === 'name'
-              ? 'Card Name (Optional)'
-              : key.startsWith('show_')
-              ? `Show ${capitalize(key.replace('show_', '').replace('_', ' '))}`
-              : capitalize(key.replace('_', ' '));
-          }}
-          @value-changed=${this._valueChanged}
-        ></ha-form>
+        <div class="basic-config">
+          <ha-textfield
+            label="Name"
+            .value=${this._config.name || ''}
+            .configValue=${'name'}
+            @input=${this._valueChanged}
+          ></ha-textfield>
+          
+          <ha-select
+            label="Entity"
+            .value=${this._config.entity}
+            .configValue=${'entity'}
+            @selected=${this._valueChanged}
+            required
+          >
+            ${entities.map((entity) => {
+              return html`<mwc-list-item .value=${entity}>${entity}</mwc-list-item>`;
+            })}
+          </ha-select>
+        </div>
+
+        <div class="section-title">Display Options</div>
+        <div class="display-options">
+          <ha-formfield label="Show Animation">
+            <ha-switch
+              .checked=${this._config.show_animation ?? true}
+              .configValue=${'show_animation'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+
+          <ha-formfield label="Show Speed">
+            <ha-switch
+              .checked=${this._config.show_speed ?? true}
+              .configValue=${'show_speed'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+
+          <ha-formfield label="Show Humidity">
+            <ha-switch
+              .checked=${this._config.show_humidity ?? true}
+              .configValue=${'show_humidity'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+
+          <ha-formfield label="Show Temperature">
+            <ha-switch
+              .checked=${this._config.show_temperature ?? true}
+              .configValue=${'show_temperature'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+
+          <ha-formfield label="Show Filter Life">
+            <ha-switch
+              .checked=${this._config.show_filter_life ?? false}
+              .configValue=${'show_filter_life'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
+
+        <div class="section-title">Control Options</div>
+        <div class="control-options">
+          <ha-formfield label="Show Light Control">
+            <ha-switch
+              .checked=${this._config.show_light_control ?? false}
+              .configValue=${'show_light_control'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+
+          <ha-formfield label="Show Child Lock">
+            <ha-switch
+              .checked=${this._config.show_child_lock ?? false}
+              .configValue=${'show_child_lock'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+
+          <ha-formfield label="Show Buzzer">
+            <ha-switch
+              .checked=${this._config.show_buzzer ?? false}
+              .configValue=${'show_buzzer'}
+              @change=${this._valueChanged}
+            ></ha-switch>
+          </ha-formfield>
+        </div>
       </div>
     `;
   }
@@ -149,10 +143,42 @@ export class HaAirPurifierCardEditor extends LitElement {
   static get styles() {
     return css`
       .card-config {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
         padding: 16px;
       }
-      ha-form {
-        display: block;
+
+      .basic-config {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 500;
+        color: var(--primary-text-color);
+        margin-top: 8px;
+      }
+
+      .display-options,
+      .control-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 8px;
+      }
+
+      ha-textfield {
+        width: 100%;
+      }
+
+      ha-select {
+        width: 100%;
+      }
+
+      ha-formfield {
+        padding: 8px;
       }
     `;
   }

@@ -23,7 +23,7 @@ export declare class HaAirPurifierCard extends LitElement {
     protected shouldUpdate(changedProps: Map<string, unknown>): boolean;
     private _handlePowerClick;
     private _handleSpeedClick;
-    private _handleModeClick;
+    private _handleModeChange;
     private _handleChildLockToggle;
     private _handleLightToggle;
     private _handleBuzzerToggle;
