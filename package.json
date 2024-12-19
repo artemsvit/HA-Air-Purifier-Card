@@ -1,6 +1,6 @@
 {
   "name": "ha-air-purifier-card",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A beautiful card for Xiaomi Air Purifier MB3",
   "type": "module",
   "main": "dist/ha-air-purifier-card.js",
