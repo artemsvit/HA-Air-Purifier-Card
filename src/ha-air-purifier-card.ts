@@ -1,15 +1,14 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, hasConfigOrEntityChanged } from 'custom-card-helpers';
-import { mdiPower, mdiLightbulb, mdiFan } from '@mdi/js';
+import { mdiPower, mdiLightbulb, mdiFan, mdiSpeedometer, mdiWaterPercent, mdiThermometer, mdiAirFilter, mdiLockOutline } from '@mdi/js';
 import './editor';
 
-// Register the card
 (window as any).customCards = (window as any).customCards || [];
 (window as any).customCards.push({
   type: 'ha-air-purifier-card',
   name: 'Xiaomi Air Purifier Card',
-  description: 'A beautiful card for Xiaomi Air Purifier',
+  description: 'A beautiful card for Xiaomi Air Purifier MB3',
 });
 
 interface Config {
@@ -22,31 +21,29 @@ interface Config {
   show_temperature?: boolean;
   show_filter_life?: boolean;
   show_light_control?: boolean;
+  show_child_lock?: boolean;
+  show_buzzer?: boolean;
 }
 
-// PM2.5 thresholds based on WHO standards
-const PM25_THRESHOLDS = {
-  GOOD: 12,
-  MODERATE: 35.4,
-  UNHEALTHY_SENSITIVE: 55.4,
-  UNHEALTHY: 150.4,
-  VERY_UNHEALTHY: 250.4,
-  HAZARDOUS: 500.4,
-};
+const MODES = {
+  Auto: 'auto',
+  Sleep: 'sleep',
+  Favorite: 'favorite'
+} as const;
 
-const PRESET_MODES = {
-  None: 'None',
-  Auto: 'Auto',
-  Sleep: 'Sleep',
-  Favorite: 'Favorite'
+const SPEED_LEVELS = {
+  Silent: { name: 'Silent', percentage: 25, rpm: '300-400' },
+  Low: { name: 'Low', percentage: 50, rpm: '400-500' },
+  Medium: { name: 'Medium', percentage: 75, rpm: '500-600' },
+  High: { name: 'High', percentage: 100, rpm: '600-800' }
 } as const;
 
 function getPM25Color(value: number): string {
-  if (value <= PM25_THRESHOLDS.GOOD) return 'var(--success-color, #43a047)';
-  if (value <= PM25_THRESHOLDS.MODERATE) return 'var(--warning-color, #ffa600)';
-  if (value <= PM25_THRESHOLDS.UNHEALTHY_SENSITIVE) return 'var(--warning-color, #ffa600)';
-  if (value <= PM25_THRESHOLDS.UNHEALTHY) return 'var(--error-color, #db4437)';
-  if (value <= PM25_THRESHOLDS.VERY_UNHEALTHY) return 'var(--error-color, #db4437)';
+  if (value <= 12) return 'var(--success-color, #43a047)';
+  if (value <= 35.4) return 'var(--warning-color, #ffa600)';
+  if (value <= 55.4) return 'var(--warning-color, #ffa600)';
+  if (value <= 150.4) return 'var(--error-color, #db4437)';
+  if (value <= 250.4) return 'var(--error-color, #db4437)';
   return 'var(--error-color, #db4437)';
 }
 
@@ -69,6 +66,8 @@ export class HaAirPurifierCard extends LitElement {
       show_temperature: true,
       show_filter_life: true,
       show_light_control: true,
+      show_child_lock: true,
+      show_buzzer: true,
     };
   }
 
@@ -83,6 +82,8 @@ export class HaAirPurifierCard extends LitElement {
       show_temperature: true,
       show_filter_life: true,
       show_light_control: true,
+      show_child_lock: true,
+      show_buzzer: true,
       ...config,
     };
   }
@@ -102,42 +103,58 @@ export class HaAirPurifierCard extends LitElement {
     });
   }
 
-  private _handleSpeedClick(speed: string): void {
+  private _handleSpeedClick(speed: keyof typeof SPEED_LEVELS): void {
     if (!this.hass || !this.config) return;
-
-    const speedMappings = {
-      'Silent': 25,
-      'Low': 50,
-      'Medium': 75,
-      'High': 100
-    };
 
     this.hass.callService('fan', 'set_percentage', {
       entity_id: this.config.entity,
-      percentage: speedMappings[speed],
+      percentage: SPEED_LEVELS[speed].percentage,
     });
   }
 
-  private _handleModeChange(e: CustomEvent): void {
+  private _handleModeClick(mode: keyof typeof MODES): void {
     if (!this.hass || !this.config) return;
-
-    const mode = (e.target as any).value;
-    if (!mode || mode === PRESET_MODES.None) return;
 
     this.hass.callService('fan', 'set_preset_mode', {
       entity_id: this.config.entity,
-      preset_mode: mode,
+      preset_mode: MODES[mode],
     });
+  }
+
+  private _handleChildLockToggle(): void {
+    if (!this.hass || !this.config) return;
+
+    const entityId = this.config.entity.replace('fan', 'switch').replace('air_purifier', 'child_lock');
+    const lockEntity = this.hass.states[entityId];
+    
+    if (lockEntity) {
+      this.hass.callService('switch', lockEntity.state === 'on' ? 'turn_off' : 'turn_on', {
+        entity_id: entityId,
+      });
+    }
   }
 
   private _handleLightToggle(): void {
     if (!this.hass || !this.config) return;
 
-    const entityId = this.config.entity.replace('fan', 'light').replace('air_purifier', 'switch_status');
+    const entityId = this.config.entity.replace('fan', 'light').replace('air_purifier', 'led');
     const lightEntity = this.hass.states[entityId];
     
     if (lightEntity) {
       this.hass.callService('light', lightEntity.state === 'on' ? 'turn_off' : 'turn_on', {
+        entity_id: entityId,
+      });
+    }
+  }
+
+  private _handleBuzzerToggle(): void {
+    if (!this.hass || !this.config) return;
+
+    const entityId = this.config.entity.replace('fan', 'switch').replace('air_purifier', 'buzzer');
+    const buzzerEntity = this.hass.states[entityId];
+    
+    if (buzzerEntity) {
+      this.hass.callService('switch', buzzerEntity.state === 'on' ? 'turn_off' : 'turn_on', {
         entity_id: entityId,
       });
     }
@@ -168,7 +185,9 @@ export class HaAirPurifierCard extends LitElement {
     const humidityEntity = this.hass.states[`sensor.${baseId.replace('air_purifier', 'relative_humidity')}`];
     const temperatureEntity = this.hass.states[`sensor.${baseId.replace('air_purifier', 'temperature')}`];
     const filterLifeEntity = this.hass.states[`sensor.${baseId.replace('air_purifier', 'filter_life_level')}`];
-    const lightEntity = this.hass.states[`light.${baseId.replace('air_purifier', 'switch_status')}`];
+    const lightEntity = this.hass.states[`light.${baseId.replace('air_purifier', 'led')}`];
+    const childLockEntity = this.hass.states[`switch.${baseId.replace('air_purifier', 'child_lock')}`];
+    const buzzerEntity = this.hass.states[`switch.${baseId.replace('air_purifier', 'buzzer')}`];
 
     const pm25 = Number(pm25Entity?.state) || 0;
     const motorSpeed = motorSpeedEntity?.state || '0';
@@ -176,11 +195,16 @@ export class HaAirPurifierCard extends LitElement {
     const temperature = temperatureEntity?.state || '0';
     const filterLife = filterLifeEntity?.state || '0';
     const isLightOn = lightEntity?.state === 'on';
+    const isChildLocked = childLockEntity?.state === 'on';
+    const isBuzzerOn = buzzerEntity?.state === 'on';
 
     const currentSpeed = fanEntity.attributes.percentage || 0;
-    const speedLabel = currentSpeed >= 90 ? 'High' : currentSpeed >= 75 ? 'Medium' : currentSpeed >= 50 ? 'Low' : 'Silent';
+    const speedLevel = Object.entries(SPEED_LEVELS).find(
+      ([_, value]) => currentSpeed <= value.percentage
+    )?.[0] || 'High';
+
+    const currentMode = fanEntity.attributes.preset_mode || 'none';
     const pm25Color = getPM25Color(pm25);
-    const currentMode = fanEntity.attributes.preset_mode || PRESET_MODES.None;
 
     return html`
       <ha-card>
@@ -205,90 +229,94 @@ export class HaAirPurifierCard extends LitElement {
             </div>
           </div>
 
-          <div class="controls">
-            ${state === 'on' ? html`
-              <div class="speed-control">
-                <ha-button-toggle-group>
-                  ${['Silent', 'Low', 'Medium', 'High'].map(speed => html`
-                    <ha-button-toggle
-                      .selected=${speedLabel === speed}
-                      @click=${() => this._handleSpeedClick(speed)}
-                      class="speed-button ${speedLabel === speed ? 'active' : ''}"
-                    >
-                      <div class="button-content">
-                        <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
-                        <span class="button-text">${speed}</span>
-                      </div>
-                    </ha-button-toggle>
-                  `)}
-                </ha-button-toggle-group>
-              </div>
-
-              <div class="control-group">
-                <div class="control-group-title">Mode</div>
-                <ha-select
-                  .value=${currentMode}
-                  @change=${this._handleModeChange}
-                  class="mode-select"
+          ${state === 'on' ? html`
+            <div class="mode-section">
+              ${Object.entries(MODES).map(([mode, value]) => html`
+                <ha-icon-button
+                  .label=${mode}
+                  @click=${() => this._handleModeClick(mode as keyof typeof MODES)}
+                  class="mode-button ${currentMode === value ? 'active' : ''}"
                 >
-                  ${Object.entries(PRESET_MODES).map(([key, value]) => html`
-                    <ha-list-item .value=${value}>
-                      ${value}
-                    </ha-list-item>
-                  `)}
-                </ha-select>
-              </div>
+                  <span class="mode-label">${mode}</span>
+                </ha-icon-button>
+              `)}
+            </div>
 
-              ${this.config.show_speed || this.config.show_humidity || this.config.show_temperature || this.config.show_filter_life ? html`
-                <div class="status-section">
-                  ${this.config.show_speed ? html`
-                    <ha-statistic-badge
-                      .value=${motorSpeed}
-                      .description=${'Fan Speed'}
-                      .icon=${mdiFan}
-                      unit="RPM"
-                    ></ha-statistic-badge>
-                  ` : ''}
-                  
-                  ${this.config.show_humidity ? html`
-                    <ha-statistic-badge
-                      .value=${humidity}
-                      .description=${'Humidity'}
-                      unit="%"
-                    ></ha-statistic-badge>
-                  ` : ''}
-                  
-                  ${this.config.show_temperature ? html`
-                    <ha-statistic-badge
-                      .value=${temperature}
-                      .description=${'Temperature'}
-                      unit="°C"
-                    ></ha-statistic-badge>
-                  ` : ''}
-                  
-                  ${this.config.show_filter_life ? html`
-                    <ha-statistic-badge
-                      .value=${filterLife}
-                      .description=${'Filter Life'}
-                      unit="%"
-                    ></ha-statistic-badge>
-                  ` : ''}
+            <div class="speed-section">
+              ${Object.entries(SPEED_LEVELS).map(([speed, data]) => html`
+                <ha-icon-button
+                  .label=${speed}
+                  @click=${() => this._handleSpeedClick(speed as keyof typeof SPEED_LEVELS)}
+                  class="speed-button ${speedLevel === speed ? 'active' : ''}"
+                >
+                  <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
+                  <span class="speed-label">${data.name}</span>
+                </ha-icon-button>
+              `)}
+            </div>
+
+            <div class="info-section">
+              ${this.config.show_temperature ? html`
+                <div class="info-item">
+                  <ha-svg-icon .path=${mdiThermometer}></ha-svg-icon>
+                  <span class="info-value">${temperature}°C</span>
                 </div>
               ` : ''}
-
-              ${this.config.show_light_control && lightEntity ? html`
-                <div class="control-group">
-                  <ha-button-toggle
-                    .label=${'Indicator Light'}
-                    .pressed=${isLightOn}
-                    @click=${this._handleLightToggle}
-                  >
-                    <ha-svg-icon .path=${mdiLightbulb}></ha-svg-icon>
-                  </ha-button-toggle>
+              
+              ${this.config.show_humidity ? html`
+                <div class="info-item">
+                  <ha-svg-icon .path=${mdiWaterPercent}></ha-svg-icon>
+                  <span class="info-value">${humidity}%</span>
                 </div>
               ` : ''}
-            ` : ''}
-          </div>
+              
+              ${this.config.show_speed ? html`
+                <div class="info-item">
+                  <ha-svg-icon .path=${mdiSpeedometer}></ha-svg-icon>
+                  <span class="info-value">${motorSpeed} RPM</span>
+                </div>
+              ` : ''}
+              
+              ${this.config.show_filter_life ? html`
+                <div class="info-item">
+                  <ha-svg-icon .path=${mdiAirFilter}></ha-svg-icon>
+                  <span class="info-value">${filterLife}%</span>
+                </div>
+              ` : ''}
+            </div>
+
+            <div class="controls-section">
+              ${this.config.show_child_lock ? html`
+                <ha-icon-button
+                  .label=${'Child Lock'}
+                  @click=${this._handleChildLockToggle}
+                  class="control-button ${isChildLocked ? 'active' : ''}"
+                >
+                  <ha-svg-icon .path=${mdiLockOutline}></ha-svg-icon>
+                </ha-icon-button>
+              ` : ''}
+
+              ${this.config.show_light_control ? html`
+                <ha-icon-button
+                  .label=${'LED'}
+                  @click=${this._handleLightToggle}
+                  class="control-button ${isLightOn ? 'active' : ''}"
+                >
+                  <ha-svg-icon .path=${mdiLightbulb}></ha-svg-icon>
+                </ha-icon-button>
+              ` : ''}
+
+              ${this.config.show_buzzer ? html`
+                <ha-icon-button
+                  .label=${'Buzzer'}
+                  @click=${this._handleBuzzerToggle}
+                  class="control-button ${isBuzzerOn ? 'active' : ''}"
+                >
+                  <ha-icon icon="mdi:volume-high"></ha-icon>
+                </ha-icon-button>
+              ` : ''}
+            </div>
+          ` : ''}
         </div>
       </ha-card>
     `;
@@ -308,16 +336,15 @@ export class HaAirPurifierCard extends LitElement {
       }
 
       .card-header {
-        padding: 16px 20px;
+        padding: 16px;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        background: var(--secondary-background-color, rgba(0, 0, 0, 0.05));
-        border-bottom: 1px solid var(--divider-color);
+        background: var(--secondary-background-color);
       }
 
       .name {
-        font-size: 18px;
+        font-size: 16px;
         font-weight: 500;
         color: var(--primary-text-color);
       }
@@ -325,30 +352,25 @@ export class HaAirPurifierCard extends LitElement {
       .power-button {
         --mdc-icon-button-size: 48px;
         color: var(--primary-text-color);
-        transition: color var(--transition-duration) ease;
       }
 
       .power-button.active {
         color: var(--primary-color);
       }
 
-      .power-button[disabled] {
-        color: var(--disabled-text-color);
-      }
-
       .content {
-        padding: 20px;
+        padding: 16px;
       }
 
       .pm25-section {
-        padding: 32px 0;
         text-align: center;
+        margin-bottom: 24px;
       }
 
       .pm25-circle {
         position: relative;
-        width: 160px;
-        height: 160px;
+        width: 140px;
+        height: 140px;
         margin: 0 auto;
         border-radius: 50%;
         background: var(--secondary-background-color);
@@ -356,7 +378,6 @@ export class HaAirPurifierCard extends LitElement {
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        transition: opacity var(--transition-duration) ease;
       }
 
       .pm25-animation {
@@ -377,108 +398,109 @@ export class HaAirPurifierCard extends LitElement {
       }
 
       .value {
-        font-size: 42px;
-        font-weight: 500;
+        font-size: 36px;
+        font-weight: bold;
         color: var(--pm25-color);
-        margin-bottom: 4px;
-        transition: color var(--transition-duration) ease;
       }
 
       .value.disabled {
-        color: var(--disabled-text-color) !important;
+        color: var(--disabled-text-color);
       }
 
       .label {
         font-size: 14px;
         color: var(--secondary-text-color);
-        transition: color var(--transition-duration) ease;
       }
 
       .label.disabled {
         color: var(--disabled-text-color);
       }
 
-      .controls {
+      .mode-section {
         display: flex;
-        flex-direction: column;
-        gap: 24px;
+        justify-content: space-around;
+        margin-bottom: 16px;
       }
 
-      .control-group {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
+      .mode-button {
+        --mdc-icon-button-size: 64px;
+        border-radius: var(--control-radius);
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
       }
 
-      .control-group-title {
+      .mode-button.active {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
+      }
+
+      .mode-label {
         font-size: 12px;
-        font-weight: 500;
-        color: var(--secondary-text-color);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-left: 4px;
+        display: block;
+        text-align: center;
       }
 
-      .speed-control {
+      .speed-section {
         display: flex;
-        justify-content: center;
-        padding: 16px;
-        background: var(--ha-card-background, var(--card-background-color));
-        border-top: 1px solid var(--divider-color);
-      }
-
-      ha-button-toggle-group {
-        --mdc-theme-primary: var(--primary-color);
-        display: flex;
-        width: 100%;
         justify-content: space-between;
-        gap: 8px;
+        margin-bottom: 16px;
       }
 
       .speed-button {
-        flex: 1;
-        --ha-button-toggle-padding: 12px;
-        --mdc-theme-primary: var(--primary-color);
-        border-radius: var(--control-radius, 12px);
+        --mdc-icon-button-size: 56px;
+        border-radius: var(--control-radius);
+        background: var(--secondary-background-color);
+        color: var(--primary-text-color);
       }
 
       .speed-button.active {
-        background-color: var(--primary-color);
-        color: var(--text-primary-color, white);
+        background: var(--primary-color);
+        color: var(--text-primary-color);
       }
 
-      .button-content {
+      .speed-label {
+        font-size: 12px;
+        display: block;
+        text-align: center;
+      }
+
+      .info-section {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 16px;
+        margin-bottom: 16px;
+        padding: 16px;
+        background: var(--secondary-background-color);
+        border-radius: var(--control-radius);
+      }
+
+      .info-item {
         display: flex;
         align-items: center;
-        justify-content: center;
         gap: 8px;
       }
 
-      .button-text {
+      .info-value {
         font-size: 14px;
-        font-weight: 500;
+        color: var(--primary-text-color);
       }
 
-      .mode-select {
-        width: 100%;
-        --mdc-select-fill-color: var(--secondary-background-color);
-        --mdc-select-ink-color: var(--primary-text-color);
-        --mdc-select-label-ink-color: var(--secondary-text-color);
-        --mdc-select-dropdown-icon-color: var(--secondary-text-color);
-        --mdc-select-focused-dropdown-icon-color: var(--primary-color);
-        --mdc-select-outlined-idle-border-color: var(--divider-color);
-        --mdc-select-outlined-hover-border-color: var(--secondary-text-color);
+      .controls-section {
+        display: flex;
+        justify-content: center;
+        gap: 16px;
       }
 
-      .status-section {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-        gap: 8px;
+      .control-button {
+        --mdc-icon-button-size: 48px;
+        border-radius: var(--control-radius);
+        background: var(--secondary-background-color);
+        color: var(--secondary-text-color);
       }
 
-      ha-statistic-badge {
-        --ha-statistic-badge-size: 100%;
-        --ha-statistic-badge-justify-content: flex-start;
+      .control-button.active {
+        background: var(--primary-color);
+        color: var(--text-primary-color);
       }
 
       .not-found {

@@ -15,6 +15,8 @@ export class HaAirPurifierCardEditor extends LitElement {
       show_temperature: true,
       show_filter_life: true,
       show_light_control: true,
+      show_child_lock: true,
+      show_buzzer: true,
       ...config,
     };
   }
@@ -103,6 +105,20 @@ export class HaAirPurifierCardEditor extends LitElement {
         required: false,
         default: true,
         description: 'Show button to control the indicator light',
+        selector: { boolean: {} }
+      },
+      {
+        name: 'show_child_lock',
+        required: false,
+        default: true,
+        description: 'Show button to control the child lock',
+        selector: { boolean: {} }
+      },
+      {
+        name: 'show_buzzer',
+        required: false,
+        default: true,
+        description: 'Show button to control the buzzer',
         selector: { boolean: {} }
       },
     ];

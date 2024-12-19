@@ -11,6 +11,8 @@ interface Config {
     show_temperature?: boolean;
     show_filter_life?: boolean;
     show_light_control?: boolean;
+    show_child_lock?: boolean;
+    show_buzzer?: boolean;
 }
 export declare class HaAirPurifierCard extends LitElement {
     hass: HomeAssistant;
@@ -21,8 +23,10 @@ export declare class HaAirPurifierCard extends LitElement {
     protected shouldUpdate(changedProps: Map<string, unknown>): boolean;
     private _handlePowerClick;
     private _handleSpeedClick;
-    private _handleModeChange;
+    private _handleModeClick;
+    private _handleChildLockToggle;
     private _handleLightToggle;
+    private _handleBuzzerToggle;
     protected render(): import("lit").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }
