@@ -24,6 +24,25 @@ interface Config {
   show_light_control?: boolean;
 }
 
+// PM2.5 thresholds based on WHO standards
+const PM25_THRESHOLDS = {
+  GOOD: 12,
+  MODERATE: 35.4,
+  UNHEALTHY_SENSITIVE: 55.4,
+  UNHEALTHY: 150.4,
+  VERY_UNHEALTHY: 250.4,
+  HAZARDOUS: 500.4,
+};
+
+function getPM25Color(value: number): string {
+  if (value <= PM25_THRESHOLDS.GOOD) return 'var(--success-color, #4CAF50)';
+  if (value <= PM25_THRESHOLDS.MODERATE) return 'var(--warning-color, #FF9800)';
+  if (value <= PM25_THRESHOLDS.UNHEALTHY_SENSITIVE) return 'var(--warning-color, #FF9800)';
+  if (value <= PM25_THRESHOLDS.UNHEALTHY) return 'var(--error-color, #F44336)';
+  if (value <= PM25_THRESHOLDS.VERY_UNHEALTHY) return 'var(--error-color, #F44336)';
+  return 'var(--error-color, #F44336)';
+}
+
 @customElement('ha-air-purifier-card')
 export class HaAirPurifierCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -37,6 +56,12 @@ export class HaAirPurifierCard extends LitElement {
     return {
       type: 'custom:ha-air-purifier-card',
       entity: 'fan.zhimi_mb3_7bb1_air_purifier',
+      show_animation: true,
+      show_speed: true,
+      show_humidity: true,
+      show_temperature: true,
+      show_filter_life: true,
+      show_light_control: true,
     };
   }
 
@@ -44,7 +69,15 @@ export class HaAirPurifierCard extends LitElement {
     if (!config.entity || config.entity.split('.')[0] !== 'fan') {
       throw new Error('Specify an entity from within the fan domain.');
     }
-    this.config = config;
+    this.config = {
+      show_animation: true,
+      show_speed: true,
+      show_humidity: true,
+      show_temperature: true,
+      show_filter_life: true,
+      show_light_control: true,
+      ...config,
+    };
   }
 
   protected shouldUpdate(changedProps: Map<string, unknown>): boolean {
@@ -76,7 +109,9 @@ export class HaAirPurifierCard extends LitElement {
   private _handleModeChange(e: CustomEvent): void {
     if (!this.hass || !this.config) return;
 
-    const mode = e.detail.value;
+    const mode = (e.target as any).value;
+    if (!mode || mode === 'none') return;
+
     this.hass.callService('fan', 'set_preset_mode', {
       entity_id: this.config.entity,
       preset_mode: mode,
@@ -121,7 +156,7 @@ export class HaAirPurifierCard extends LitElement {
     const filterLifeEntity = this.hass.states[`sensor.${baseId.replace('air_purifier', 'filter_life_level')}`];
     const lightEntity = this.hass.states[`light.${baseId.replace('air_purifier', 'switch_status')}`];
 
-    const pm25 = pm25Entity?.state || '0';
+    const pm25 = Number(pm25Entity?.state) || 0;
     const motorSpeed = motorSpeedEntity?.state || '0';
     const humidity = humidityEntity?.state || '0';
     const temperature = temperatureEntity?.state || '0';
@@ -130,6 +165,7 @@ export class HaAirPurifierCard extends LitElement {
 
     const currentSpeed = fanEntity.attributes.percentage || 0;
     const speedLabel = currentSpeed >= 90 ? 'High' : currentSpeed >= 45 ? 'Medium' : 'Low';
+    const pm25Color = getPM25Color(pm25);
 
     return html`
       <ha-card>
@@ -145,8 +181,8 @@ export class HaAirPurifierCard extends LitElement {
 
         <div class="content">
           <div class="pm25-section">
-            <div class="pm25-circle ${state === 'on' ? 'active' : ''}">
-              ${this.config.show_animation !== false ? html`
+            <div class="pm25-circle ${state === 'on' ? 'active' : ''}" style="--pm25-color: ${pm25Color}">
+              ${this.config.show_animation !== false && state === 'on' ? html`
                 <div class="pm25-animation"></div>
               ` : ''}
               <div class="value">${pm25}</div>
@@ -176,16 +212,15 @@ export class HaAirPurifierCard extends LitElement {
               <div class="group-title">Mode</div>
               <ha-select
                 .value=${fanEntity.attributes.preset_mode || 'none'}
-                @selected=${this._handleModeChange}
+                @change=${this._handleModeChange}
                 .disabled=${state !== 'on'}
                 fixedMenuPosition
                 naturalMenuWidth
               >
-                ${['none', 'auto', 'sleep', 'favorite'].map(mode => html`
-                  <ha-list-item .value=${mode}>
-                    ${mode.charAt(0).toUpperCase() + mode.slice(1)}
-                  </ha-list-item>
-                `)}
+                <ha-list-item .value=${'none'}>None</ha-list-item>
+                <ha-list-item .value=${'auto'}>Auto</ha-list-item>
+                <ha-list-item .value=${'sleep'}>Sleep</ha-list-item>
+                <ha-list-item .value=${'favorite'}>Favorite</ha-list-item>
               </ha-select>
             </div>
 
@@ -248,6 +283,7 @@ export class HaAirPurifierCard extends LitElement {
         --ha-card-border-radius: var(--ha-card-border-radius, 12px);
         --ha-card-box-shadow: var(--ha-card-box-shadow, none);
         --mdc-icon-size: 24px;
+        --pm25-color: var(--primary-color);
       }
 
       ha-card {
@@ -306,7 +342,7 @@ export class HaAirPurifierCard extends LitElement {
       }
 
       .pm25-circle.active {
-        border-color: var(--primary-color);
+        border-color: var(--pm25-color);
       }
 
       .pm25-animation {
@@ -317,14 +353,14 @@ export class HaAirPurifierCard extends LitElement {
         bottom: -2px;
         border-radius: 50%;
         border: 2px solid transparent;
-        border-top-color: var(--primary-color);
+        border-top-color: var(--pm25-color);
         animation: rotate 2s linear infinite;
       }
 
       .value {
         font-size: 36px;
         font-weight: bold;
-        color: var(--primary-text-color);
+        color: var(--pm25-color);
       }
 
       .label {
