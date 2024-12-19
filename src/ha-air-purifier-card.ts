@@ -15,18 +15,23 @@ import {
   PresetMode,
 } from './types';
 
-console.info(
-  '%c AIR-PURIFIER-CARD %c 1.0.0 ',
-  'color: white; background: #4CAF50; font-weight: 700;',
-  'color: #4CAF50; background: white; font-weight: 700;',
-);
+if (!customElements.get('ha-air-purifier-card')) {
+  console.info(
+    '%c HA-AIR-PURIFIER-CARD %c 1.0.3 ',
+    'color: white; background: #4CAF50; font-weight: 700;',
+    'color: #4CAF50; background: white; font-weight: 700;',
+  );
 
-(window as any).customCards = (window as any).customCards || [];
-(window as any).customCards.push({
-  type: 'ha-air-purifier-card',
-  name: 'Xiaomi Air Purifier Card',
-  description: 'A beautiful card for Xiaomi Air Purifier MB3',
-});
+  customElements.define('ha-air-purifier-card', AirPurifierCard);
+
+  (window as any).customCards = (window as any).customCards || [];
+  (window as any).customCards.push({
+    type: 'ha-air-purifier-card',
+    name: 'Xiaomi Air Purifier Card',
+    description: 'A beautiful card for Xiaomi Air Purifier MB3',
+    preview: true,
+  });
+}
 
 @customElement('ha-air-purifier-card')
 export class AirPurifierCard extends LitElement {
