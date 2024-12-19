@@ -23,12 +23,12 @@ console.info(
 
 (window as any).customCards = (window as any).customCards || [];
 (window as any).customCards.push({
-  type: 'air-purifier-card',
+  type: 'ha-air-purifier-card',
   name: 'Xiaomi Air Purifier Card',
   description: 'A beautiful card for Xiaomi Air Purifier MB3',
 });
 
-@customElement('air-purifier-card')
+@customElement('ha-air-purifier-card')
 export class AirPurifierCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
 

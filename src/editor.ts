@@ -4,7 +4,7 @@ import { HomeAssistant, fireEvent, LovelaceCardEditor } from 'custom-card-helper
 import { AirPurifierCardConfig } from './types';
 import { localize } from './localize';
 
-@customElement('air-purifier-card-editor')
+@customElement('ha-air-purifier-card-editor')
 export class AirPurifierCardEditor extends LitElement implements LovelaceCardEditor {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @state() private _config!: AirPurifierCardConfig;

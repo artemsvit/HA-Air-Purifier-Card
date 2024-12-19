@@ -42,14 +42,24 @@ export function buildConfig(
     throw new Error(localize('error.invalid_entity'));
   }
 
+  // Convert old config format to new format
+  const show = {
+    name: config.show_name ?? true,
+    state: config.show_animation ?? true,
+    temperature: config.show_temperature ?? true,
+    humidity: config.show_humidity ?? true,
+    speed: config.show_speed ?? true,
+    filter_life: config.show_filter_life ?? false,
+    light: config.show_light_control ?? false,
+    child_lock: config.show_child_lock ?? false,
+    buzzer: config.show_buzzer ?? false,
+  };
+
   return {
-    type: 'custom:air-purifier-card',
+    type: 'custom:ha-air-purifier-card',
     entity: config.entity,
     name: config.name,
-    show: {
-      ...DEFAULT_CONFIG.show,
-      ...(config.show || {}),
-    },
+    show,
     compact_view: config.compact_view ?? DEFAULT_CONFIG.compact_view,
     stats: config.stats ?? DEFAULT_CONFIG.stats,
     shortcuts: config.shortcuts ?? DEFAULT_CONFIG.shortcuts,

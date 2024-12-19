@@ -24,6 +24,7 @@ export interface AirPurifierAttributes extends HassEntityAttributeBase {
   child_lock?: 'on' | 'off';
   led?: 'on' | 'off';
   buzzer?: 'on' | 'off';
+  friendly_name?: string;
 }
 
 export interface AirPurifierEntity extends HassEntityBase {
@@ -65,6 +66,16 @@ export interface AirPurifierCardConfig extends LovelaceCardConfig {
     child_lock?: boolean;
     buzzer?: boolean;
   };
+  // Old config format
+  show_name?: boolean;
+  show_animation?: boolean;
+  show_temperature?: boolean;
+  show_humidity?: boolean;
+  show_speed?: boolean;
+  show_filter_life?: boolean;
+  show_light_control?: boolean;
+  show_child_lock?: boolean;
+  show_buzzer?: boolean;
   stats?: AirPurifierCardStat[];
   shortcuts?: AirPurifierCardShortcut[];
 }
