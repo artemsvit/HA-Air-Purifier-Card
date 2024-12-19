@@ -1,6 +1,19 @@
 import { LitElement, CSSResultGroup } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import { AirPurifierCardConfig } from './types';
+declare global {
+    interface HTMLElementTagNameMap {
+        'ha-air-purifier-card': AirPurifierCard;
+    }
+    interface Window {
+        customCards: Array<{
+            type: string;
+            name: string;
+            description: string;
+            preview?: boolean;
+        }>;
+    }
+}
 export declare class AirPurifierCard extends LitElement {
     hass: HomeAssistant;
     private config;

@@ -18,33 +18,37 @@ const serveopts = {
   },
 };
 
+const plugins = [
+  resolve(),
+  commonjs(),
+  typescript(),
+  json(),
+  babel({
+    babelHelpers: 'bundled',
+    exclude: 'node_modules/**',
+  }),
+  !dev && terser({
+    format: {
+      comments: false,
+    },
+  }),
+  dev && serve(serveopts),
+].filter(Boolean);
+
 export default {
   input: 'src/ha-air-purifier-card.ts',
   output: {
     dir: 'dist',
     format: 'es',
     sourcemap: true,
+    inlineDynamicImports: true,
   },
-  plugins: [
-    resolve(),
-    commonjs(),
-    typescript(),
-    json(),
-    babel({
-      babelHelpers: 'bundled',
-      exclude: 'node_modules/**',
-    }),
-    !dev && terser({
-      format: {
-        comments: false,
-      },
-    }),
-    dev && serve(serveopts),
-  ].filter(Boolean),
+  plugins,
   external: [
     'lit',
     'lit/decorators.js',
     'custom-card-helpers',
     '@mdi/js',
+    'home-assistant-js-websocket',
   ],
 };

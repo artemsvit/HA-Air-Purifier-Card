@@ -15,22 +15,20 @@ import {
   PresetMode,
 } from './types';
 
-if (!customElements.get('ha-air-purifier-card')) {
-  console.info(
-    '%c HA-AIR-PURIFIER-CARD %c 1.0.3 ',
-    'color: white; background: #4CAF50; font-weight: 700;',
-    'color: #4CAF50; background: white; font-weight: 700;',
-  );
+// Declare custom elements and globals for TypeScript
+declare global {
+  interface HTMLElementTagNameMap {
+    'ha-air-purifier-card': AirPurifierCard;
+  }
 
-  customElements.define('ha-air-purifier-card', AirPurifierCard);
-
-  (window as any).customCards = (window as any).customCards || [];
-  (window as any).customCards.push({
-    type: 'ha-air-purifier-card',
-    name: 'Xiaomi Air Purifier Card',
-    description: 'A beautiful card for Xiaomi Air Purifier MB3',
-    preview: true,
-  });
+  interface Window {
+    customCards: Array<{
+      type: string;
+      name: string;
+      description: string;
+      preview?: boolean;
+    }>;
+  }
 }
 
 @customElement('ha-air-purifier-card')
@@ -46,6 +44,7 @@ export class AirPurifierCard extends LitElement {
 
   public static getStubConfig(): object {
     return {
+      type: 'custom:ha-air-purifier-card',
       entity: 'fan.xiaomi_air_purifier',
       show: {
         name: true,
@@ -244,3 +243,12 @@ export class AirPurifierCard extends LitElement {
     `;
   }
 }
+
+// Register the card
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: 'ha-air-purifier-card',
+  name: 'Xiaomi Air Purifier Card',
+  description: 'A beautiful card for Xiaomi Air Purifier MB3',
+  preview: true,
+});
