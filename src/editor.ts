@@ -67,42 +67,42 @@ export class HaAirPurifierCardEditor extends LitElement {
         name: 'show_animation',
         required: false,
         default: true,
-        description: 'Show animation around PM2.5 value when device is on',
+        description: 'Show rotating animation around PM2.5 value when device is on',
         selector: { boolean: {} }
       },
       {
         name: 'show_speed',
         required: false,
         default: true,
-        description: 'Show fan speed in RPM',
+        description: 'Display fan speed in RPM',
         selector: { boolean: {} }
       },
       {
         name: 'show_humidity',
         required: false,
         default: true,
-        description: 'Show relative humidity value',
+        description: 'Display current relative humidity',
         selector: { boolean: {} }
       },
       {
         name: 'show_temperature',
         required: false,
         default: true,
-        description: 'Show temperature value',
+        description: 'Display current temperature',
         selector: { boolean: {} }
       },
       {
         name: 'show_filter_life',
         required: false,
         default: true,
-        description: 'Show remaining filter life percentage',
+        description: 'Display remaining filter life percentage',
         selector: { boolean: {} }
       },
       {
         name: 'show_light_control',
         required: false,
         default: true,
-        description: 'Show indicator light control button',
+        description: 'Show button to control the indicator light',
         selector: { boolean: {} }
       },
     ];

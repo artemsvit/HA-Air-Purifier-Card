@@ -202,8 +202,8 @@ export class HaAirPurifierCard extends LitElement {
         <div class="content">
           <div class="pm25-section">
             <div class="pm25-circle ${state === 'on' ? 'active' : ''}" style="--pm25-color: ${pm25Color}">
-              ${this.config.show_animation ? html`
-                <div class="pm25-animation ${state === 'on' ? 'active' : ''}"></div>
+              ${this.config.show_animation && state === 'on' ? html`
+                <div class="rotating-border"></div>
               ` : ''}
               <div class="value">${pm25}</div>
               <div class="label">PM2.5</div>
@@ -217,13 +217,13 @@ export class HaAirPurifierCard extends LitElement {
                 <div class="speed-buttons">
                   ${['Low', 'Medium', 'High'].map(speed => html`
                     <ha-button
-                      .outlined=${speedLabel !== speed}
+                      .raised=${speedLabel === speed}
                       @click=${() => this._handleSpeedClick(speed)}
                       class="speed-button ${speedLabel === speed ? 'active' : ''}"
                     >
                       <div class="button-content">
                         <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
-                        <span>${speed}</span>
+                        <span class="button-text">${speed}</span>
                       </div>
                     </ha-button>
                   `)}
@@ -247,42 +247,44 @@ export class HaAirPurifierCard extends LitElement {
               </div>
             ` : ''}
 
-            <div class="status-section">
-              ${this.config.show_speed !== false ? html`
-                <ha-statistic-badge
-                  .value=${motorSpeed}
-                  .description=${'Fan Speed'}
-                  .icon=${mdiFan}
-                  unit="RPM"
-                ></ha-statistic-badge>
-              ` : ''}
-              
-              ${this.config.show_humidity !== false ? html`
-                <ha-statistic-badge
-                  .value=${humidity}
-                  .description=${'Humidity'}
-                  unit="%"
-                ></ha-statistic-badge>
-              ` : ''}
-              
-              ${this.config.show_temperature !== false ? html`
-                <ha-statistic-badge
-                  .value=${temperature}
-                  .description=${'Temperature'}
-                  unit="°C"
-                ></ha-statistic-badge>
-              ` : ''}
-              
-              ${this.config.show_filter_life !== false ? html`
-                <ha-statistic-badge
-                  .value=${filterLife}
-                  .description=${'Filter Life'}
-                  unit="%"
-                ></ha-statistic-badge>
-              ` : ''}
-            </div>
+            ${this.config.show_speed || this.config.show_humidity || this.config.show_temperature || this.config.show_filter_life ? html`
+              <div class="status-section">
+                ${this.config.show_speed ? html`
+                  <ha-statistic-badge
+                    .value=${motorSpeed}
+                    .description=${'Fan Speed'}
+                    .icon=${mdiFan}
+                    unit="RPM"
+                  ></ha-statistic-badge>
+                ` : ''}
+                
+                ${this.config.show_humidity ? html`
+                  <ha-statistic-badge
+                    .value=${humidity}
+                    .description=${'Humidity'}
+                    unit="%"
+                  ></ha-statistic-badge>
+                ` : ''}
+                
+                ${this.config.show_temperature ? html`
+                  <ha-statistic-badge
+                    .value=${temperature}
+                    .description=${'Temperature'}
+                    unit="°C"
+                  ></ha-statistic-badge>
+                ` : ''}
+                
+                ${this.config.show_filter_life ? html`
+                  <ha-statistic-badge
+                    .value=${filterLife}
+                    .description=${'Filter Life'}
+                    unit="%"
+                  ></ha-statistic-badge>
+                ` : ''}
+              </div>
+            ` : ''}
 
-            ${this.config.show_light_control !== false && lightEntity ? html`
+            ${this.config.show_light_control && lightEntity ? html`
               <div class="control-group">
                 <ha-button-toggle
                   .label=${'Indicator Light'}
@@ -368,7 +370,7 @@ export class HaAirPurifierCard extends LitElement {
         border-color: var(--pm25-color);
       }
 
-      .pm25-animation {
+      .rotating-border {
         position: absolute;
         top: -2px;
         left: -2px;
@@ -376,14 +378,13 @@ export class HaAirPurifierCard extends LitElement {
         bottom: -2px;
         border-radius: 50%;
         border: 2px solid transparent;
-        border-top-color: var(--pm25-color);
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
+        border-top: 2px solid var(--pm25-color);
+        animation: spin 2s linear infinite;
       }
 
-      .pm25-animation.active {
-        opacity: 1;
-        animation: rotate 2s linear infinite;
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
       }
 
       .value {
@@ -436,7 +437,10 @@ export class HaAirPurifierCard extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 16px;
+      }
+
+      .button-text {
+        margin-left: 16px;
       }
 
       ha-button {
@@ -461,11 +465,6 @@ export class HaAirPurifierCard extends LitElement {
       ha-statistic-badge {
         --ha-statistic-badge-size: 100%;
         --ha-statistic-badge-justify-content: flex-start;
-      }
-
-      @keyframes rotate {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
       }
 
       .not-found {
