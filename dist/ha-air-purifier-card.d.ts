@@ -5,9 +5,12 @@ interface Config {
     type: string;
     entity: string;
     name?: string;
-    show_name?: boolean;
-    show_state?: boolean;
-    show_toolbar?: boolean;
+    show_animation?: boolean;
+    show_speed?: boolean;
+    show_humidity?: boolean;
+    show_temperature?: boolean;
+    show_filter_life?: boolean;
+    show_light_control?: boolean;
 }
 export declare class HaAirPurifierCard extends LitElement {
     hass: HomeAssistant;
@@ -16,8 +19,8 @@ export declare class HaAirPurifierCard extends LitElement {
     static getStubConfig(): object;
     setConfig(config: Config): void;
     protected shouldUpdate(changedProps: Map<string, unknown>): boolean;
-    private _handleAction;
-    private _handleSpeedChange;
+    private _handlePowerClick;
+    private _handleModeChange;
     private _handleLightToggle;
     protected render(): import("lit").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
