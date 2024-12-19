@@ -202,8 +202,8 @@ export class HaAirPurifierCard extends LitElement {
         <div class="content">
           <div class="pm25-section">
             <div class="pm25-circle ${state === 'on' ? 'active' : ''}" style="--pm25-color: ${pm25Color}">
-              ${this.config.show_animation !== false && state === 'on' ? html`
-                <div class="pm25-animation"></div>
+              ${this.config.show_animation ? html`
+                <div class="pm25-animation ${state === 'on' ? 'active' : ''}"></div>
               ` : ''}
               <div class="value">${pm25}</div>
               <div class="label">PM2.5</div>
@@ -219,10 +219,12 @@ export class HaAirPurifierCard extends LitElement {
                     <ha-button
                       .outlined=${speedLabel !== speed}
                       @click=${() => this._handleSpeedClick(speed)}
-                      class="${speedLabel === speed ? 'active' : ''}"
+                      class="speed-button ${speedLabel === speed ? 'active' : ''}"
                     >
-                      <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
-                      ${speed}
+                      <div class="button-content">
+                        <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
+                        <span>${speed}</span>
+                      </div>
                     </ha-button>
                   `)}
                 </div>
@@ -375,6 +377,12 @@ export class HaAirPurifierCard extends LitElement {
         border-radius: 50%;
         border: 2px solid transparent;
         border-top-color: var(--pm25-color);
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+
+      .pm25-animation.active {
+        opacity: 1;
         animation: rotate 2s linear infinite;
       }
 
@@ -412,6 +420,23 @@ export class HaAirPurifierCard extends LitElement {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
+      }
+
+      .speed-button {
+        width: 100%;
+        --mdc-theme-primary: var(--primary-color);
+      }
+
+      .speed-button.active {
+        background-color: var(--primary-color);
+        color: var(--text-primary-color, white);
+      }
+
+      .button-content {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 16px;
       }
 
       ha-button {

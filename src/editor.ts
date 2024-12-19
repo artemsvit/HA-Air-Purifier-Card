@@ -8,7 +8,15 @@ export class HaAirPurifierCardEditor extends LitElement {
   @property({ attribute: false }) private _config!: any;
 
   public setConfig(config: any): void {
-    this._config = config;
+    this._config = {
+      show_animation: true,
+      show_speed: true,
+      show_humidity: true,
+      show_temperature: true,
+      show_filter_life: true,
+      show_light_control: true,
+      ...config,
+    };
   }
 
   private _valueChanged(ev: CustomEvent): void {
@@ -42,6 +50,7 @@ export class HaAirPurifierCardEditor extends LitElement {
     const schema = [
       {
         name: 'entity',
+        required: true,
         selector: {
           entity: {
             domain: 'fan',
@@ -49,41 +58,85 @@ export class HaAirPurifierCardEditor extends LitElement {
           },
         },
       },
-      { name: 'name', selector: { text: {} } },
-      { name: 'show_animation', selector: { boolean: {} } },
-      { name: 'show_speed', selector: { boolean: {} } },
-      { name: 'show_humidity', selector: { boolean: {} } },
-      { name: 'show_temperature', selector: { boolean: {} } },
-      { name: 'show_filter_life', selector: { boolean: {} } },
-      { name: 'show_light_control', selector: { boolean: {} } },
+      {
+        name: 'name',
+        required: false,
+        selector: { text: {} }
+      },
+      {
+        name: 'show_animation',
+        required: false,
+        default: true,
+        description: 'Show animation around PM2.5 value when device is on',
+        selector: { boolean: {} }
+      },
+      {
+        name: 'show_speed',
+        required: false,
+        default: true,
+        description: 'Show fan speed in RPM',
+        selector: { boolean: {} }
+      },
+      {
+        name: 'show_humidity',
+        required: false,
+        default: true,
+        description: 'Show relative humidity value',
+        selector: { boolean: {} }
+      },
+      {
+        name: 'show_temperature',
+        required: false,
+        default: true,
+        description: 'Show temperature value',
+        selector: { boolean: {} }
+      },
+      {
+        name: 'show_filter_life',
+        required: false,
+        default: true,
+        description: 'Show remaining filter life percentage',
+        selector: { boolean: {} }
+      },
+      {
+        name: 'show_light_control',
+        required: false,
+        default: true,
+        description: 'Show indicator light control button',
+        selector: { boolean: {} }
+      },
     ];
 
     return html`
-      <ha-form
-        .hass=${this.hass}
-        .data=${this._config}
-        .schema=${schema}
-        .computeLabel=${(schema: any) => {
-          const key = schema.name;
-          const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
-          return key === 'entity' 
-            ? 'Entity' 
-            : key === 'name'
-            ? 'Name (Optional)'
-            : key.startsWith('show_')
-            ? `Show ${capitalize(key.replace('show_', '').replace('_', ' '))}`
-            : capitalize(key.replace('_', ' '));
-        }}
-        @value-changed=${this._valueChanged}
-      ></ha-form>
+      <div class="card-config">
+        <ha-form
+          .hass=${this.hass}
+          .data=${this._config}
+          .schema=${schema}
+          .computeLabel=${(schema: any) => {
+            const key = schema.name;
+            const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1);
+            return key === 'entity' 
+              ? 'Air Purifier Entity' 
+              : key === 'name'
+              ? 'Card Name (Optional)'
+              : key.startsWith('show_')
+              ? `Show ${capitalize(key.replace('show_', '').replace('_', ' '))}`
+              : capitalize(key.replace('_', ' '));
+          }}
+          @value-changed=${this._valueChanged}
+        ></ha-form>
+      </div>
     `;
   }
 
   static get styles() {
     return css`
+      .card-config {
+        padding: 16px;
+      }
       ha-form {
         display: block;
-        padding: 16px;
       }
     `;
   }
