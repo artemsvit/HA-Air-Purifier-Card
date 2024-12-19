@@ -1,0 +1,17 @@
+{
+    "name": "HA Air Purifier Card Development",
+    "image": "mcr.microsoft.com/vscode/devcontainers/typescript-node:0-16",
+    "postCreateCommand": "npm install",
+    "forwardPorts": [5000],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "dbaeumer.vscode-eslint",
+                "esbenp.prettier-vscode",
+                "bierner.lit-html",
+                "runem.lit-plugin"
+            ]
+        }
+    },
+    "remoteUser": "node"
+}

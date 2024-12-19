@@ -1,0 +1,9 @@
+title: Air Purifier Card Development
+views:
+  - title: Test View
+    cards:
+      - type: custom:ha-air-purifier-card
+        entity: fan.air_purifier
+        show_name: true
+        show_status: true
+        show_toolbar: true

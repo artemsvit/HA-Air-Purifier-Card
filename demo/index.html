@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Xiaomi Air Purifier Card Demo</title>
+    <script type="module">
+        import 'https://unpkg.com/@material/mwc-button@0.27.0/mwc-button.js?module';
+        import 'https://unpkg.com/@material/mwc-icon-button@0.27.0/mwc-icon-button.js?module';
+        import 'https://unpkg.com/@material/mwc-select@0.27.0/mwc-select.js?module';
+        import 'https://unpkg.com/@material/mwc-list@0.27.0/mwc-list-item.js?module';
+        import 'https://unpkg.com/@material/mwc-switch@0.27.0/mwc-switch.js?module';
+        import 'https://unpkg.com/@material/mwc-formfield@0.27.0/mwc-formfield.js?module';
+    </script>
+    <script type="module" src="../dist/ha-air-purifier-card.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <style>
+        :root {
+            /* Light theme variables */
+            --primary-color: #03a9f4;
+            --rgb-primary-color: 3, 169, 244;
+            --dark-primary-color: #0288d1;
+            --light-on-color: #fdd835;
+            --rgb-light-on-color: 253, 216, 53;
+
+            /* Common variables */
+            --card-radius: 12px;
+            --control-radius: 8px;
+            --transition-duration: 0.2s;
+
+            /* Theme-aware variables */
+            color-scheme: light dark;
+            
+            /* Light theme defaults */
+            --card-background-color: #ffffff;
+            --primary-background-color: #f7f7f7;
+            --secondary-background-color: rgba(0, 0, 0, 0.05);
+            --primary-text-color: rgba(0, 0, 0, 0.87);
+            --secondary-text-color: rgba(0, 0, 0, 0.6);
+            --disabled-text-color: rgba(0, 0, 0, 0.38);
+            --divider-color: rgba(0, 0, 0, 0.12);
+            --state-icon-color: #44739e;
+            --error-color: #db4437;
+            --warning-color: #ffa600;
+            --success-color: #43a047;
+            --info-color: #039be5;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --card-background-color: #1c1c1c;
+                --primary-background-color: #0f1114;
+                --secondary-background-color: rgba(255, 255, 255, 0.05);
+                --primary-text-color: #ffffff;
+                --secondary-text-color: rgba(255, 255, 255, 0.7);
+                --disabled-text-color: rgba(255, 255, 255, 0.5);
+                --divider-color: rgba(255, 255, 255, 0.12);
+                --state-icon-color: #44739e;
+            }
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 24px;
+            background-color: var(--primary-background-color);
+            color: var(--primary-text-color);
+        }
+
+        .card {
+            max-width: 400px;
+            margin: 0 auto;
+            background: var(--card-background-color);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+        }
+
+        .card-header {
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid var(--divider-color);
+            background: var(--secondary-background-color);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--primary-text-color);
+        }
+
+        .power-button {
+            --mdc-icon-button-size: 48px;
+            color: var(--primary-color);
+            transition: color var(--transition-duration) ease;
+        }
+
+        .power-button[disabled] {
+            color: var(--disabled-text-color);
+        }
+
+        .pm25-display {
+            position: relative;
+            padding: 32px 0;
+            text-align: center;
+        }
+
+        .pm25-circle {
+            position: relative;
+            width: 160px;
+            height: 160px;
+            margin: 0 auto;
+            border-radius: 50%;
+            background: var(--secondary-background-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity var(--transition-duration) ease;
+        }
+
+        .pm25-circle.disabled {
+            opacity: 0.5;
+        }
+
+        .pm25-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            animation: rotate 2s linear infinite;
+            display: none;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .running .pm25-animation {
+            display: block;
+            border-top-color: var(--primary-color);
+        }
+
+        .pm25-value {
+            font-size: 42px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            transition: all var(--transition-duration) ease;
+        }
+
+        .pm25-value.disabled {
+            color: var(--disabled-text-color) !important;
+        }
+
+        .pm25-label {
+            font-size: 14px;
+            color: var(--secondary-text-color);
+            transition: color var(--transition-duration) ease;
+        }
+
+        .pm25-label.disabled {
+            color: var(--disabled-text-color);
+        }
+
+        .controls {
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            background: var(--card-background-color);
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .control-group-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-left: 4px;
+        }
+
+        .mode-select {
+            width: 100%;
+            --mdc-select-fill-color: var(--secondary-background-color);
+            --mdc-select-ink-color: var(--primary-text-color);
+            --mdc-select-label-ink-color: var(--secondary-text-color);
+            --mdc-select-dropdown-icon-color: var(--secondary-text-color);
+            --mdc-select-focused-dropdown-icon-color: var(--primary-color);
+            --mdc-select-outlined-idle-border-color: var(--divider-color);
+            --mdc-select-outlined-hover-border-color: var(--secondary-text-color);
+            --mdc-theme-surface: var(--card-background-color);
+            --mdc-select-disabled-fill-color: var(--secondary-background-color);
+            --mdc-select-disabled-ink-color: var(--disabled-text-color);
+            --mdc-theme-primary: var(--primary-color);
+            --mdc-list-vertical-padding: 0px;
+        }
+
+        .mode-select::part(selected-text) {
+            color: var(--primary-text-color);
+        }
+
+        .mode-select[disabled]::part(selected-text) {
+            color: var(--disabled-text-color);
+        }
+
+        .mode-select mwc-list-item {
+            --mdc-ripple-color: var(--primary-color);
+            --mdc-theme-primary: var(--primary-color);
+            --mdc-theme-text-primary-on-background: var(--primary-text-color);
+            --mdc-theme-text-secondary-on-background: var(--secondary-text-color);
+            --mdc-list-item-graphic-margin: 8px;
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin: 2px 4px;
+        }
+
+        .mode-select mwc-list-item[selected] {
+            background-color: rgba(var(--rgb-primary-color), 0.12);
+            color: var(--primary-color);
+        }
+
+        .mode-select mwc-list-item:hover {
+            background-color: var(--secondary-background-color);
+        }
+
+        .speed-buttons {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .speed-button {
+            padding: 12px 8px;
+            border: 1px solid var(--divider-color);
+            border-radius: var(--control-radius);
+            background: var(--secondary-background-color);
+            color: var(--primary-text-color);
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-duration) ease;
+        }
+
+        .speed-button:hover:not(:disabled) {
+            background: var(--secondary-background-color);
+            border-color: var(--secondary-text-color);
+        }
+
+        .speed-button.active {
+            background: rgba(var(--rgb-primary-color), 0.15);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .speed-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: var(--secondary-background-color);
+        }
+
+        .control-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: var(--secondary-background-color);
+            border-radius: var(--control-radius);
+            min-height: 48px;
+        }
+
+        .control-row.disabled {
+            opacity: 0.5;
+        }
+
+        .control-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--primary-text-color);
+            font-size: 14px;
+        }
+
+        .control-label mwc-icon {
+            color: var(--secondary-text-color);
+            --mdc-icon-size: 20px;
+            transition: color var(--transition-duration) ease;
+        }
+
+        .control-row.light-on:not(.disabled) .control-label mwc-icon {
+            color: var(--light-on-color);
+        }
+
+        .control-row mwc-switch {
+            --mdc-theme-primary: var(--primary-color);
+            --mdc-switch-selected-track-color: rgba(var(--rgb-primary-color), 0.3);
+            --mdc-switch-selected-handle-color: var(--primary-color);
+            --mdc-switch-unselected-track-color: rgba(var(--primary-text-color), 0.2);
+            --mdc-switch-unselected-handle-color: var(--primary-text-color);
+            --mdc-switch-disabled-track-color: rgba(var(--disabled-text-color), 0.2);
+            --mdc-switch-disabled-handle-color: var(--disabled-text-color);
+        }
+
+        .control-row.light-on mwc-switch {
+            --mdc-theme-primary: var(--light-on-color);
+            --mdc-switch-selected-track-color: rgba(var(--rgb-light-on-color), 0.3);
+            --mdc-switch-selected-handle-color: var(--light-on-color);
+        }
+
+        .control-row mwc-switch::part(track) {
+            opacity: 0.4;
+        }
+
+        .control-row.disabled mwc-switch::part(track) {
+            opacity: 0.2;
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 20px;
+            background: var(--secondary-background-color);
+            border-top: 1px solid var(--divider-color);
+        }
+
+        .info-item {
+            text-align: center;
+            padding: 12px;
+            background: var(--secondary-background-color);
+            border-radius: var(--control-radius);
+            transition: opacity var(--transition-duration) ease;
+        }
+
+        .info-item.disabled {
+            opacity: 0.5;
+        }
+
+        .info-value {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--primary-text-color);
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: var(--secondary-text-color);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <div class="card-header">
+            <div class="card-title">Living Room Air Purifier</div>
+            <mwc-icon-button class="power-button" id="power" icon="power_settings_new"></mwc-icon-button>
+        </div>
+
+        <div class="pm25-display">
+            <div class="pm25-circle" id="pm25Circle">
+                <div class="pm25-animation"></div>
+                <div class="pm25-value" id="pm25Value">25</div>
+                <div class="pm25-label">PM2.5 µg/m³</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <div class="control-group">
+                <div class="control-group-title">Mode</div>
+                <mwc-select 
+                    class="mode-select" 
+                    id="mode-select" 
+                    outlined
+                >
+                    <mwc-list-item value="auto" selected>Auto</mwc-list-item>
+                    <mwc-list-item value="sleep">Sleep</mwc-list-item>
+                    <mwc-list-item value="favorite">Favorite</mwc-list-item>
+                    <mwc-list-item value="none">None</mwc-list-item>
+                </mwc-select>
+            </div>
+
+            <div class="control-group">
+                <div class="control-group-title">Fan Speed</div>
+                <div class="speed-buttons">
+                    <button class="speed-button" id="speed-high" data-speed="100">High</button>
+                    <button class="speed-button" id="speed-medium" data-speed="66">Medium</button>
+                    <button class="speed-button" id="speed-low" data-speed="33">Low</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-group-title">Settings</div>
+                <div class="control-row" id="light-control">
+                    <div class="control-label">
+                        <mwc-icon>lightbulb</mwc-icon>
+                        Indicator Light
+                    </div>
+                    <mwc-switch id="light"></mwc-switch>
+                </div>
+            </div>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-item">
+                <div class="info-value">23°C</div>
+                <div class="info-label">Temperature</div>
+            </div>
+            <div class="info-item">
+                <div class="info-value">45%</div>
+                <div class="info-label">Humidity</div>
+            </div>
+            <div class="info-item">
+                <div class="info-value">85%</div>
+                <div class="info-label">Filter Life</div>
+            </div>
+            <div class="info-item">
+                <div class="info-value">800</div>
+                <div class="info-label">Motor Speed</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const pm25Circle = document.getElementById('pm25Circle');
+        const pm25Value = document.getElementById('pm25Value');
+        const powerButton = document.getElementById('power');
+        const modeSelect = document.getElementById('mode-select');
+        const lightSwitch = document.getElementById('light');
+        const speedButtons = {
+            high: document.getElementById('speed-high'),
+            medium: document.getElementById('speed-medium'),
+            low: document.getElementById('speed-low')
+        };
+
+        let isPowered = localStorage.getItem('airPurifier_powered') === 'true' ?? true;
+        let currentMode = localStorage.getItem('airPurifier_mode') || 'auto';
+        let currentSpeed = localStorage.getItem('airPurifier_speed') || '0';
+        let lastActiveSpeed = localStorage.getItem('airPurifier_lastActiveSpeed') || '66';
+        let lastActiveMode = localStorage.getItem('airPurifier_lastActiveMode') || 'auto';
+        let isLightOn = localStorage.getItem('airPurifier_light') === 'true';
+        let pm25Level = 25;
+
+        function updatePM25Color(value) {
+            let color;
+            if (!isPowered || currentSpeed === '0') {
+                color = 'var(--disabled-text-color)';
+            } else if (value <= 35) {
+                color = 'var(--success-color)';
+            } else if (value <= 75) {
+                color = 'var(--warning-color)';
+            } else if (value <= 115) {
+                color = '#ff9800';
+            } else {
+                color = 'var(--error-color)';
+            }
+            pm25Value.style.color = color;
+            if (isPowered && currentSpeed !== '0') {
+                document.querySelector('.pm25-animation').style.borderTopColor = color;
+            }
+        }
+
+        function updateSpeedButtons() {
+            Object.entries(speedButtons).forEach(([speed, button]) => {
+                button.classList.toggle('active', button.dataset.speed === currentSpeed);
+                button.disabled = !isPowered;
+            });
+        }
+
+        function updateControls() {
+            powerButton.style.color = isPowered ? 'var(--primary-color)' : 'var(--disabled-text-color)';
+            
+            // Update PM2.5 display
+            pm25Circle.classList.toggle('running', isPowered && currentSpeed !== '0');
+            pm25Circle.classList.toggle('disabled', !isPowered);
+            pm25Value.classList.toggle('disabled', !isPowered || currentSpeed === '0');
+            document.querySelector('.pm25-label').classList.toggle('disabled', !isPowered || currentSpeed === '0');
+            
+            // Update controls
+            modeSelect.disabled = !isPowered;
+            lightSwitch.disabled = !isPowered;
+            const lightControl = document.getElementById('light-control');
+            lightControl.classList.toggle('disabled', !isPowered);
+            lightControl.classList.toggle('light-on', lightSwitch.checked && isPowered);
+            
+            // Update info items
+            document.querySelectorAll('.info-item').forEach(item => {
+                item.classList.toggle('disabled', !isPowered);
+            });
+            
+            updateSpeedButtons();
+            updatePM25Color(pm25Level);
+            saveState();
+        }
+
+        function saveState() {
+            localStorage.setItem('airPurifier_powered', isPowered);
+            localStorage.setItem('airPurifier_mode', currentMode);
+            localStorage.setItem('airPurifier_speed', currentSpeed);
+            localStorage.setItem('airPurifier_lastActiveSpeed', lastActiveSpeed);
+            localStorage.setItem('airPurifier_lastActiveMode', lastActiveMode);
+            localStorage.setItem('airPurifier_light', lightSwitch.checked);
+        }
+
+        powerButton.addEventListener('click', () => {
+            isPowered = !isPowered;
+            if (!isPowered) {
+                // Save current states before turning off
+                if (currentSpeed !== '0') lastActiveSpeed = currentSpeed;
+                if (currentMode !== 'none') lastActiveMode = currentMode;
+                currentSpeed = '0';
+                currentMode = 'none';
+                modeSelect.value = currentMode;
+            } else {
+                // Restore last active states
+                currentSpeed = lastActiveSpeed;
+                currentMode = lastActiveMode;
+                modeSelect.value = currentMode;
+            }
+            updateControls();
+            saveState();
+        });
+
+        modeSelect.addEventListener('selected', (e) => {
+            if (isPowered) {
+                currentMode = e.target.value;
+                updateControls();
+                saveState();
+            }
+        });
+
+        Object.entries(speedButtons).forEach(([speed, button]) => {
+            button.addEventListener('click', () => {
+                if (isPowered) {
+                    currentSpeed = button.dataset.speed;
+                    updateControls();
+                    saveState();
+                }
+            });
+        });
+
+        lightSwitch.addEventListener('change', () => {
+            isLightOn = lightSwitch.checked;
+            updateControls();
+            saveState();
+        });
+
+        setInterval(() => {
+            if (isPowered && currentSpeed !== '0') {
+                const change = Math.random() * 2 - 1;
+                pm25Level = Math.max(0, Math.min(150, pm25Level + change));
+                pm25Value.textContent = Math.round(pm25Level);
+                updatePM25Color(pm25Level);
+            }
+        }, 2000);
+
+        // Initialize controls with saved states
+        modeSelect.value = currentMode;
+        lightSwitch.checked = isLightOn;
+
+        updatePM25Color(pm25Level);
+        updateControls();
+    </script>
+</body>
+</html>

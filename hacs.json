@@ -1,0 +1,7 @@
+{
+  "name": "Xiaomi Air Purifier Card",
+  "render_readme": true,
+  "filename": "ha-air-purifier-card.js",
+  "content_in_root": false,
+  "homeassistant": "2023.8.0"
+}
