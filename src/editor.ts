@@ -39,20 +39,20 @@ export class HaAirPurifierCardEditor extends LitElement {
 
     return html`
       <div class="card-config">
-        <div class="config-row">
+        <div class="values">
           <ha-entity-picker
-            .label="Air Purifier Entity (Required)"
             .hass=${this.hass}
+            .label=${"Air Purifier Entity (Required)"}
             .value=${this._config.entity}
-            .configValue=${'entity'}
-            .includeDomains=${['fan']}
-            .entityFilter=${(entityId: string) => entityId.startsWith('fan.zhimi_mb3_')}
+            .configValue=${"entity"}
+            .includeDomains=${["fan"]}
+            .entityFilter=${(entityId: string) => entityId.includes('zhimi_mb3')}
             @value-changed=${this._valueChanged}
-            required
+            allow-custom-entity
           ></ha-entity-picker>
         </div>
 
-        <div class="config-row">
+        <div class="values">
           <ha-textfield
             label="Card Name (Optional)"
             .value=${this._config.name || ''}
@@ -61,64 +61,66 @@ export class HaAirPurifierCardEditor extends LitElement {
           ></ha-textfield>
         </div>
 
-        <div class="config-row">
-          <ha-formfield label="Show PM2.5 Animation">
-            <ha-switch
-              .checked=${this._config.show_animation !== false}
-              .configValue=${'show_animation'}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-        </div>
+        <div class="switches">
+          <div class="switch-wrapper">
+            <ha-formfield label="Show PM2.5 Animation">
+              <ha-switch
+                .checked=${this._config.show_animation !== false}
+                .configValue=${'show_animation'}
+                @change=${this._valueChanged}
+              ></ha-switch>
+            </ha-formfield>
+          </div>
 
-        <div class="config-row">
-          <ha-formfield label="Show Speed">
-            <ha-switch
-              .checked=${this._config.show_speed !== false}
-              .configValue=${'show_speed'}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-        </div>
+          <div class="switch-wrapper">
+            <ha-formfield label="Show Speed">
+              <ha-switch
+                .checked=${this._config.show_speed !== false}
+                .configValue=${'show_speed'}
+                @change=${this._valueChanged}
+              ></ha-switch>
+            </ha-formfield>
+          </div>
 
-        <div class="config-row">
-          <ha-formfield label="Show Humidity">
-            <ha-switch
-              .checked=${this._config.show_humidity !== false}
-              .configValue=${'show_humidity'}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-        </div>
+          <div class="switch-wrapper">
+            <ha-formfield label="Show Humidity">
+              <ha-switch
+                .checked=${this._config.show_humidity !== false}
+                .configValue=${'show_humidity'}
+                @change=${this._valueChanged}
+              ></ha-switch>
+            </ha-formfield>
+          </div>
 
-        <div class="config-row">
-          <ha-formfield label="Show Temperature">
-            <ha-switch
-              .checked=${this._config.show_temperature !== false}
-              .configValue=${'show_temperature'}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-        </div>
+          <div class="switch-wrapper">
+            <ha-formfield label="Show Temperature">
+              <ha-switch
+                .checked=${this._config.show_temperature !== false}
+                .configValue=${'show_temperature'}
+                @change=${this._valueChanged}
+              ></ha-switch>
+            </ha-formfield>
+          </div>
 
-        <div class="config-row">
-          <ha-formfield label="Show Filter Life">
-            <ha-switch
-              .checked=${this._config.show_filter_life !== false}
-              .configValue=${'show_filter_life'}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
-        </div>
+          <div class="switch-wrapper">
+            <ha-formfield label="Show Filter Life">
+              <ha-switch
+                .checked=${this._config.show_filter_life !== false}
+                .configValue=${'show_filter_life'}
+                @change=${this._valueChanged}
+              ></ha-switch>
+            </ha-formfield>
+          </div>
 
-        <div class="config-row">
-          <ha-formfield label="Show Light Control">
-            <ha-switch
-              .checked=${this._config.show_light_control !== false}
-              .configValue=${'show_light_control'}
-              @change=${this._valueChanged}
-            ></ha-switch>
-          </ha-formfield>
+          <div class="switch-wrapper">
+            <ha-formfield label="Show Light Control">
+              <ha-switch
+                .checked=${this._config.show_light_control !== false}
+                .configValue=${'show_light_control'}
+                @change=${this._valueChanged}
+              ></ha-switch>
+            </ha-formfield>
+          </div>
         </div>
       </div>
     `;
@@ -129,25 +131,33 @@ export class HaAirPurifierCardEditor extends LitElement {
       .card-config {
         display: flex;
         flex-direction: column;
-        gap: 16px;
+        gap: 24px;
         padding: 16px;
       }
 
-      .config-row {
-        display: flex;
-        align-items: center;
+      .values {
+        display: grid;
+        gap: 16px;
       }
 
-      ha-entity-picker,
       ha-textfield {
         width: 100%;
       }
 
-      ha-formfield {
+      .switches {
         display: flex;
-        height: 48px;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .switch-wrapper {
+        display: flex;
         align-items: center;
-        --mdc-typography-body2-font-size: 14px;
+      }
+
+      ha-formfield {
+        padding: 8px;
+        color: var(--primary-text-color);
       }
 
       ha-switch {

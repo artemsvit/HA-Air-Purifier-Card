@@ -20,6 +20,7 @@ export declare class HaAirPurifierCard extends LitElement {
     setConfig(config: Config): void;
     protected shouldUpdate(changedProps: Map<string, unknown>): boolean;
     private _handlePowerClick;
+    private _handleSpeedClick;
     private _handleModeChange;
     private _handleLightToggle;
     protected render(): import("lit").TemplateResult<1>;
