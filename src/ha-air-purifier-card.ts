@@ -31,6 +31,15 @@ declare global {
   }
 }
 
+// Register the card
+window.customCards = window.customCards || [];
+window.customCards.push({
+  type: 'ha-air-purifier-card',
+  name: 'Xiaomi Air Purifier Card',
+  description: 'A beautiful card for Xiaomi Air Purifier MB3',
+  preview: true,
+});
+
 @customElement('ha-air-purifier-card')
 export class AirPurifierCard extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
@@ -243,12 +252,3 @@ export class AirPurifierCard extends LitElement {
     `;
   }
 }
-
-// Register the card
-window.customCards = window.customCards || [];
-window.customCards.push({
-  type: 'ha-air-purifier-card',
-  name: 'Xiaomi Air Purifier Card',
-  description: 'A beautiful card for Xiaomi Air Purifier MB3',
-  preview: true,
-});
