@@ -1,7 +1,7 @@
 import { LitElement, html, css } from 'lit';
 import { customElement, property } from 'lit/decorators.js';
 import { HomeAssistant, hasConfigOrEntityChanged } from 'custom-card-helpers';
-import { mdiPower, mdiLightbulb } from '@mdi/js';
+import { mdiPower, mdiLightbulb, mdiFan } from '@mdi/js';
 import './editor';
 
 // This puts your card into the UI card picker dialog
@@ -76,19 +76,20 @@ export class HaAirPurifierCard extends LitElement {
   private _handleModeChange(e: CustomEvent): void {
     if (!this.hass || !this.config) return;
 
-    const mode = e.detail.value.toLowerCase();
+    const mode = e.detail.value;
     this.hass.callService('fan', 'set_preset_mode', {
       entity_id: this.config.entity,
       preset_mode: mode,
     });
   }
 
-  private _handleLightToggle(e: CustomEvent): void {
+  private _handleLightToggle(): void {
     if (!this.hass || !this.config) return;
 
     const entityId = this.config.entity.replace('fan', 'light').replace('air_purifier', 'switch_status');
+    const lightEntity = this.hass.states[entityId];
     
-    this.hass.callService('light', e.detail.checked ? 'turn_on' : 'turn_off', {
+    this.hass.callService('light', lightEntity.state === 'on' ? 'turn_off' : 'turn_on', {
       entity_id: entityId,
     });
   }
@@ -102,7 +103,7 @@ export class HaAirPurifierCard extends LitElement {
     if (!fanEntity) {
       return html`
         <ha-card>
-          <div class="warning">
+          <div class="not-found">
             Entity not found: ${this.config.entity}
           </div>
         </ha-card>
@@ -133,100 +134,109 @@ export class HaAirPurifierCard extends LitElement {
     return html`
       <ha-card>
         <div class="card-header">
-          <div class="card-title">${name}</div>
-          <mwc-icon-button
-            class="power-button"
+          <div class="name">${name}</div>
+          <ha-icon-button
+            .path=${mdiPower}
             @click=${this._handlePowerClick}
             ?disabled=${!fanEntity}
-          >
-            <ha-svg-icon .path=${mdiPower}></ha-svg-icon>
-          </mwc-icon-button>
+            class="power-button ${state === 'on' ? 'active' : ''}"
+          ></ha-icon-button>
         </div>
 
-        <div class="pm25-display ${state === 'on' ? 'running' : ''}">
-          <div class="pm25-circle ${state !== 'on' ? 'disabled' : ''}">
-            ${this.config.show_animation !== false ? html`
-              <div class="pm25-animation"></div>
-            ` : ''}
-            <div class="pm25-value ${state !== 'on' ? 'disabled' : ''}">${pm25}</div>
-            <div class="pm25-label ${state !== 'on' ? 'disabled' : ''}">PM2.5</div>
-          </div>
-        </div>
-
-        <div class="controls">
-          <div class="control-group">
-            <div class="control-group-title">Mode</div>
-            <div class="speed-buttons">
-              ${['Low', 'Medium', 'High'].map(speed => html`
-                <mwc-button
-                  class="${speedLabel === speed ? 'active' : ''}"
-                  ?disabled=${state !== 'on'}
-                  @click=${() => this._handleSpeedClick(speed)}
-                >
-                  ${speed}
-                </mwc-button>
-              `)}
-            </div>
-            <div class="mode-select">
-              <select
-                @change=${this._handleModeChange}
-                .value=${fanEntity.attributes.preset_mode || 'none'}
-                ?disabled=${state !== 'on'}
-              >
-                <option value="none">None</option>
-                <option value="auto">Auto</option>
-                <option value="sleep">Sleep</option>
-                <option value="favorite">Favorite</option>
-              </select>
+        <div class="content">
+          <div class="pm25-section">
+            <div class="pm25-circle ${state === 'on' ? 'active' : ''}">
+              ${this.config.show_animation !== false ? html`
+                <div class="pm25-animation"></div>
+              ` : ''}
+              <div class="value">${pm25}</div>
+              <div class="label">PM2.5</div>
             </div>
           </div>
 
-          <div class="control-group">
-            <div class="control-group-title">Status</div>
-            <div class="info-grid">
-              ${this.config.show_speed !== false ? html`
-                <div class="info-item">
-                  <span class="info-label">Speed</span>
-                  <span class="info-value">${motorSpeed} RPM</span>
-                </div>
-              ` : ''}
-              ${this.config.show_humidity !== false ? html`
-                <div class="info-item">
-                  <span class="info-label">Humidity</span>
-                  <span class="info-value">${humidity}%</span>
-                </div>
-              ` : ''}
-              ${this.config.show_temperature !== false ? html`
-                <div class="info-item">
-                  <span class="info-label">Temperature</span>
-                  <span class="info-value">${temperature}°C</span>
-                </div>
-              ` : ''}
-              ${this.config.show_filter_life !== false ? html`
-                <div class="info-item">
-                  <span class="info-label">Filter Life</span>
-                  <span class="info-value">${filterLife}%</span>
-                </div>
-              ` : ''}
-            </div>
-          </div>
-
-          ${this.config.show_light_control !== false ? html`
+          <div class="controls-section">
             <div class="control-group">
-              <div class="control-row light-on">
-                <mwc-formfield label="Indicator Light">
-                  <div class="light-control">
-                    <ha-svg-icon .path=${mdiLightbulb} class="light-icon ${isLightOn ? 'on' : ''}"></ha-svg-icon>
-                    <mwc-switch
-                      ?checked=${isLightOn}
-                      @change=${this._handleLightToggle}
-                      ?disabled=${state !== 'on'}
-                    ></mwc-switch>
-                  </div>
-                </mwc-formfield>
+              <div class="group-title">Fan Speed</div>
+              <div class="speed-buttons">
+                ${['Low', 'Medium', 'High'].map(speed => html`
+                  <ha-button
+                    .outlined=${speedLabel !== speed}
+                    .disabled=${state !== 'on'}
+                    @click=${() => this._handleSpeedClick(speed)}
+                    class="${speedLabel === speed ? 'active' : ''}"
+                  >
+                    <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
+                    ${speed}
+                  </ha-button>
+                `)}
               </div>
             </div>
-          ` : ''}
+
+            <div class="control-group">
+              <div class="group-title">Mode</div>
+              <ha-select
+                .value=${fanEntity.attributes.preset_mode || 'none'}
+                @selected=${this._handleModeChange}
+                .disabled=${state !== 'on'}
+                fixedMenuPosition
+                naturalMenuWidth
+              >
+                ${['none', 'auto', 'sleep', 'favorite'].map(mode => html`
+                  <ha-list-item .value=${mode}>
+                    ${mode.charAt(0).toUpperCase() + mode.slice(1)}
+                  </ha-list-item>
+                `)}
+              </ha-select>
+            </div>
+
+            <div class="status-section">
+              ${this.config.show_speed !== false ? html`
+                <ha-statistic-badge
+                  .value=${motorSpeed}
+                  .description=${'Fan Speed'}
+                  .icon=${mdiFan}
+                  unit="RPM"
+                ></ha-statistic-badge>
+              ` : ''}
+              
+              ${this.config.show_humidity !== false ? html`
+                <ha-statistic-badge
+                  .value=${humidity}
+                  .description=${'Humidity'}
+                  unit="%"
+                ></ha-statistic-badge>
+              ` : ''}
+              
+              ${this.config.show_temperature !== false ? html`
+                <ha-statistic-badge
+                  .value=${temperature}
+                  .description=${'Temperature'}
+                  unit="°C"
+                ></ha-statistic-badge>
+              ` : ''}
+              
+              ${this.config.show_filter_life !== false ? html`
+                <ha-statistic-badge
+                  .value=${filterLife}
+                  .description=${'Filter Life'}
+                  unit="%"
+                ></ha-statistic-badge>
+              ` : ''}
+            </div>
+
+            ${this.config.show_light_control !== false ? html`
+              <div class="control-group">
+                <ha-button-toggle
+                  .label=${'Indicator Light'}
+                  .value=${isLightOn}
+                  @change=${this._handleLightToggle}
+                  .disabled=${state !== 'on'}
+                >
+                  <ha-svg-icon .path=${mdiLightbulb}></ha-svg-icon>
+                </ha-button-toggle>
+              </div>
+            ` : ''}
+          </div>
         </div>
       </ha-card>
     `;
@@ -235,124 +245,98 @@ export class HaAirPurifierCard extends LitElement {
   static get styles() {
     return css`
       :host {
-        --mdc-icon-button-size: 48px;
+        --ha-card-border-radius: var(--ha-card-border-radius, 12px);
+        --ha-card-box-shadow: var(--ha-card-box-shadow, none);
         --mdc-icon-size: 24px;
-        --mdc-theme-primary: var(--primary-color, #03a9f4);
-        --rgb-primary-color: var(--rgb-primary-color, 3, 169, 244);
-        --dark-primary-color: var(--dark-primary-color, #0288d1);
-        --light-on-color: var(--light-on-color, #fdd835);
-        --rgb-light-on-color: var(--rgb-light-on-color, 253, 216, 53);
-        --card-radius: var(--card-radius, 12px);
-        --control-radius: var(--control-radius, 8px);
-        --transition-duration: var(--transition-duration, 0.2s);
       }
 
       ha-card {
-        background: var(--card-background-color);
-        border-radius: var(--card-radius);
-        box-shadow: var(--ha-card-box-shadow, none);
-        color: var(--primary-text-color);
+        height: 100%;
         overflow: hidden;
-      }
-
-      .warning {
-        display: block;
-        color: var(--error-color);
-        padding: 16px;
+        padding: 0;
       }
 
       .card-header {
-        padding: 16px 20px;
         display: flex;
-        align-items: center;
         justify-content: space-between;
-        border-bottom: 1px solid var(--divider-color);
-        background: var(--secondary-background-color);
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--ha-card-background, var(--card-background-color));
       }
 
-      .card-title {
-        font-size: 18px;
-        font-weight: 500;
-        color: var(--primary-text-color);
+      .name {
+        font-size: var(--ha-card-header-font-size, 24px);
+        font-weight: var(--ha-card-header-font-weight, normal);
+        color: var(--ha-card-header-color, var(--primary-text-color));
       }
 
       .power-button {
+        color: var(--primary-text-color);
+      }
+
+      .power-button.active {
         color: var(--primary-color);
-        transition: color var(--transition-duration) ease;
       }
 
-      .power-button[disabled] {
-        color: var(--disabled-text-color);
+      .content {
+        padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
       }
 
-      .pm25-display {
-        position: relative;
-        padding: 32px 0;
-        text-align: center;
+      .pm25-section {
+        display: flex;
+        justify-content: center;
+        padding: 16px 0;
       }
 
       .pm25-circle {
         position: relative;
-        width: 160px;
-        height: 160px;
-        margin: 0 auto;
+        width: 140px;
+        height: 140px;
         border-radius: 50%;
-        background: var(--secondary-background-color);
+        background: var(--ha-card-background, var(--card-background-color));
+        border: 2px solid var(--divider-color);
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
-        transition: opacity var(--transition-duration) ease;
+        transition: border-color 0.2s ease-in-out;
       }
 
-      .pm25-circle.disabled {
-        opacity: 0.5;
+      .pm25-circle.active {
+        border-color: var(--primary-color);
       }
 
       .pm25-animation {
         position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
         border-radius: 50%;
         border: 2px solid transparent;
-        animation: rotate 2s linear infinite;
-        display: none;
-      }
-
-      .running .pm25-animation {
-        display: block;
         border-top-color: var(--primary-color);
+        animation: rotate 2s linear infinite;
       }
 
-      .pm25-value {
-        font-size: 42px;
-        font-weight: 500;
-        margin-bottom: 4px;
-        transition: all var(--transition-duration) ease;
+      .value {
+        font-size: 36px;
+        font-weight: bold;
+        color: var(--primary-text-color);
       }
 
-      .pm25-value.disabled {
-        color: var(--disabled-text-color) !important;
-      }
-
-      .pm25-label {
+      .label {
         font-size: 14px;
         color: var(--secondary-text-color);
-        transition: color var(--transition-duration) ease;
-        padding-top: 16px;
+        margin-top: 8px;
       }
 
-      .pm25-label.disabled {
-        color: var(--disabled-text-color);
-      }
-
-      .controls {
-        padding: 20px;
+      .controls-section {
         display: flex;
         flex-direction: column;
-        gap: 24px;
+        gap: 16px;
       }
 
       .control-group {
@@ -361,108 +345,51 @@ export class HaAirPurifierCard extends LitElement {
         gap: 8px;
       }
 
-      .control-group-title {
-        font-size: 12px;
+      .group-title {
+        font-size: 14px;
         font-weight: 500;
         color: var(--secondary-text-color);
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        margin-left: 4px;
       }
 
       .speed-buttons {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
         gap: 8px;
-        margin-bottom: 16px;
       }
 
-      .speed-buttons mwc-button {
+      ha-button {
+        width: 100%;
+      }
+
+      ha-button.active {
         --mdc-theme-primary: var(--primary-color);
+      }
+
+      ha-select {
         width: 100%;
       }
 
-      .speed-buttons mwc-button.active {
-        background-color: var(--primary-color);
-        color: white;
-      }
-
-      .mode-select {
-        width: 100%;
-      }
-
-      .mode-select select {
-        width: 100%;
-        padding: 12px;
-        border-radius: var(--control-radius);
-        background: var(--secondary-background-color);
-        border: 1px solid var(--divider-color);
-        color: var(--primary-text-color);
-        font-size: 14px;
-        outline: none;
-        cursor: pointer;
-      }
-
-      .mode-select select:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-      }
-
-      .info-grid {
+      .status-section {
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 16px;
-      }
-
-      .info-item {
-        display: flex;
-        flex-direction: column;
-        gap: 4px;
-      }
-
-      .info-label {
-        font-size: 12px;
-        color: var(--secondary-text-color);
-      }
-
-      .info-value {
-        font-size: 16px;
-        color: var(--primary-text-color);
-      }
-
-      .control-row {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 8px;
-        border-radius: var(--control-radius);
-        background: var(--secondary-background-color);
-      }
-
-      .light-control {
-        display: flex;
-        align-items: center;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
         gap: 8px;
+        padding: 8px 0;
       }
 
-      .light-icon {
-        color: var(--secondary-text-color);
-        transition: color var(--transition-duration) ease;
-      }
-
-      .light-icon.on {
-        color: var(--light-on-color);
-      }
-
-      .control-row.light-on mwc-switch {
-        --mdc-theme-primary: var(--light-on-color);
-        --mdc-switch-selected-track-color: rgba(var(--rgb-light-on-color), 0.3);
-        --mdc-switch-selected-handle-color: var(--light-on-color);
+      ha-statistic-badge {
+        --ha-statistic-badge-size: 100%;
+        --ha-statistic-badge-justify-content: flex-start;
       }
 
       @keyframes rotate {
         from { transform: rotate(0deg); }
         to { transform: rotate(360deg); }
+      }
+
+      .not-found {
+        padding: 16px;
+        text-align: center;
+        color: var(--error-color);
       }
     `;
   }

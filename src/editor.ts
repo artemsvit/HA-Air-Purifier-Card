@@ -6,6 +6,7 @@ import { HomeAssistant, fireEvent } from 'custom-card-helpers';
 export class HaAirPurifierCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
   @property({ type: Object }) private _config!: any;
+  @property({ type: Boolean }) private _configChanged = false;
 
   public setConfig(config: any): void {
     this._config = config;
@@ -19,6 +20,10 @@ export class HaAirPurifierCardEditor extends LitElement {
 
     const value = target.value || ev.detail?.value || target.checked;
 
+    if (this._config[target.configValue] === value) {
+      return;
+    }
+
     if (value === '') {
       const newConfig = { ...this._config };
       delete newConfig[target.configValue];
@@ -28,6 +33,7 @@ export class HaAirPurifierCardEditor extends LitElement {
         ...this._config,
         [target.configValue]: value,
       };
+      this._configChanged = true;
       fireEvent(this, 'config-changed', { config: newConfig });
     }
   }
@@ -37,131 +43,86 @@ export class HaAirPurifierCardEditor extends LitElement {
       return html``;
     }
 
+    const entities = Object.keys(this.hass.states).filter(
+      eid => eid.split('.')[0] === 'fan' && eid.includes('zhimi_mb3')
+    );
+
     return html`
-      <div class="card-config">
-        <div class="values">
-          <ha-entity-picker
-            .hass=${this.hass}
-            .label=${"Air Purifier Entity (Required)"}
-            .value=${this._config.entity}
-            .configValue=${"entity"}
-            .includeDomains=${["fan"]}
-            .entityFilter=${(entityId: string) => entityId.includes('zhimi_mb3')}
-            @value-changed=${this._valueChanged}
-            allow-custom-entity
-          ></ha-entity-picker>
-        </div>
-
-        <div class="values">
-          <ha-textfield
-            label="Card Name (Optional)"
-            .value=${this._config.name || ''}
-            .configValue=${'name'}
-            @input=${this._valueChanged}
-          ></ha-textfield>
-        </div>
-
-        <div class="switches">
-          <div class="switch-wrapper">
-            <ha-formfield label="Show PM2.5 Animation">
-              <ha-switch
-                .checked=${this._config.show_animation !== false}
-                .configValue=${'show_animation'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-
-          <div class="switch-wrapper">
-            <ha-formfield label="Show Speed">
-              <ha-switch
-                .checked=${this._config.show_speed !== false}
-                .configValue=${'show_speed'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-
-          <div class="switch-wrapper">
-            <ha-formfield label="Show Humidity">
-              <ha-switch
-                .checked=${this._config.show_humidity !== false}
-                .configValue=${'show_humidity'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-
-          <div class="switch-wrapper">
-            <ha-formfield label="Show Temperature">
-              <ha-switch
-                .checked=${this._config.show_temperature !== false}
-                .configValue=${'show_temperature'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-
-          <div class="switch-wrapper">
-            <ha-formfield label="Show Filter Life">
-              <ha-switch
-                .checked=${this._config.show_filter_life !== false}
-                .configValue=${'show_filter_life'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-
-          <div class="switch-wrapper">
-            <ha-formfield label="Show Light Control">
-              <ha-switch
-                .checked=${this._config.show_light_control !== false}
-                .configValue=${'show_light_control'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-        </div>
-      </div>
+      <ha-form
+        .schema=${[
+          { 
+            name: "entity",
+            required: true,
+            selector: {
+              entity: {
+                domain: "fan",
+                filter: (entity: string) => entity.includes('zhimi_mb3'),
+              }
+            }
+          },
+          {
+            name: "name",
+            selector: { text: {} }
+          },
+          {
+            name: "show_animation",
+            selector: { boolean: {} }
+          },
+          {
+            name: "show_speed",
+            selector: { boolean: {} }
+          },
+          {
+            name: "show_humidity",
+            selector: { boolean: {} }
+          },
+          {
+            name: "show_temperature",
+            selector: { boolean: {} }
+          },
+          {
+            name: "show_filter_life",
+            selector: { boolean: {} }
+          },
+          {
+            name: "show_light_control",
+            selector: { boolean: {} }
+          }
+        ]}
+        .data=${this._config}
+        .hass=${this.hass}
+        .computeLabel=${(schema: any) => {
+          switch (schema.name) {
+            case "entity":
+              return "Air Purifier Entity (Required)";
+            case "name":
+              return "Card Name (Optional)";
+            case "show_animation":
+              return "Show PM2.5 Animation";
+            case "show_speed":
+              return "Show Speed";
+            case "show_humidity":
+              return "Show Humidity";
+            case "show_temperature":
+              return "Show Temperature";
+            case "show_filter_life":
+              return "Show Filter Life";
+            case "show_light_control":
+              return "Show Light Control";
+            default:
+              return schema.name;
+          }
+        }}
+        @value-changed=${this._valueChanged}
+      ></ha-form>
     `;
   }
 
   static get styles() {
     return css`
-      .card-config {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        padding: 16px;
-      }
-
-      .values {
-        display: grid;
-        gap: 16px;
-      }
-
-      ha-textfield {
-        width: 100%;
-      }
-
-      .switches {
-        display: flex;
-        flex-direction: column;
-        gap: 16px;
-      }
-
-      .switch-wrapper {
-        display: flex;
-        align-items: center;
-      }
-
-      ha-formfield {
-        padding: 8px;
-        color: var(--primary-text-color);
-      }
-
-      ha-switch {
-        --mdc-theme-secondary: var(--primary-color);
+      ha-form {
+        display: block;
+        padding: var(--ha-form-spacing, 16px);
       }
     `;
   }
