@@ -105,11 +105,16 @@ export class HaAirPurifierCard extends LitElement {
   private _handleSpeedClick(speed: string): void {
     if (!this.hass || !this.config) return;
 
-    const percentage = speed === 'High' ? 100 : speed === 'Medium' ? 50 : 10;
-    
+    const speedMappings = {
+      'Silent': 25,
+      'Low': 50,
+      'Medium': 75,
+      'High': 100
+    };
+
     this.hass.callService('fan', 'set_percentage', {
       entity_id: this.config.entity,
-      percentage: percentage,
+      percentage: speedMappings[speed],
     });
   }
 
@@ -173,7 +178,7 @@ export class HaAirPurifierCard extends LitElement {
     const isLightOn = lightEntity?.state === 'on';
 
     const currentSpeed = fanEntity.attributes.percentage || 0;
-    const speedLabel = currentSpeed >= 90 ? 'High' : currentSpeed >= 45 ? 'Medium' : 'Low';
+    const speedLabel = currentSpeed >= 90 ? 'High' : currentSpeed >= 75 ? 'Medium' : currentSpeed >= 50 ? 'Low' : 'Silent';
     const pm25Color = getPM25Color(pm25);
     const currentMode = fanEntity.attributes.preset_mode || PRESET_MODES.None;
 
@@ -202,12 +207,11 @@ export class HaAirPurifierCard extends LitElement {
 
           <div class="controls">
             ${state === 'on' ? html`
-              <div class="control-group">
-                <div class="control-group-title">Fan Speed</div>
-                <div class="speed-buttons">
-                  ${['Low', 'Medium', 'High'].map(speed => html`
-                    <ha-button
-                      .raised=${speedLabel === speed}
+              <div class="speed-control">
+                <ha-button-toggle-group>
+                  ${['Silent', 'Low', 'Medium', 'High'].map(speed => html`
+                    <ha-button-toggle
+                      .selected=${speedLabel === speed}
                       @click=${() => this._handleSpeedClick(speed)}
                       class="speed-button ${speedLabel === speed ? 'active' : ''}"
                     >
@@ -215,9 +219,9 @@ export class HaAirPurifierCard extends LitElement {
                         <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
                         <span class="button-text">${speed}</span>
                       </div>
-                    </ha-button>
+                    </ha-button-toggle>
                   `)}
-                </div>
+                </ha-button-toggle-group>
               </div>
 
               <div class="control-group">
@@ -415,15 +419,27 @@ export class HaAirPurifierCard extends LitElement {
         margin-left: 4px;
       }
 
-      .speed-buttons {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
+      .speed-control {
+        display: flex;
+        justify-content: center;
+        padding: 16px;
+        background: var(--ha-card-background, var(--card-background-color));
+        border-top: 1px solid var(--divider-color);
+      }
+
+      ha-button-toggle-group {
+        --mdc-theme-primary: var(--primary-color);
+        display: flex;
+        width: 100%;
+        justify-content: space-between;
         gap: 8px;
       }
 
       .speed-button {
+        flex: 1;
+        --ha-button-toggle-padding: 12px;
         --mdc-theme-primary: var(--primary-color);
-        width: 100%;
+        border-radius: var(--control-radius, 12px);
       }
 
       .speed-button.active {
@@ -435,10 +451,12 @@ export class HaAirPurifierCard extends LitElement {
         display: flex;
         align-items: center;
         justify-content: center;
+        gap: 8px;
       }
 
       .button-text {
-        margin-left: 16px;
+        font-size: 14px;
+        font-weight: 500;
       }
 
       .mode-select {
