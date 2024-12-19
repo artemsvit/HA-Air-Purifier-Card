@@ -7,6 +7,12 @@ import '@material/mwc-icon-button';
 import '@material/mwc-switch';
 import './editor';
 
+console.info(
+  '%c XIAOMI-AIR-PURIFIER-CARD %c 1.0.0 ',
+  'color: white; background: #555555; font-weight: 700;',
+  'color: white; background: #000000; font-weight: 700;',
+);
+
 interface Config {
   entity: string;
   name?: string;
@@ -14,6 +20,13 @@ interface Config {
   show_state?: boolean;
   show_toolbar?: boolean;
 }
+
+(window as any).customCards = (window as any).customCards || [];
+(window as any).customCards.push({
+  type: 'ha-air-purifier-card',
+  name: 'Xiaomi Air Purifier Card',
+  description: 'A card for Xiaomi Air Purifier',
+});
 
 @customElement('ha-air-purifier-card')
 export class HaAirPurifierCard extends LitElement {
