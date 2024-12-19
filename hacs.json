@@ -8,5 +8,5 @@
   "country": ["US", "GB", "DE", "FR", "IT", "ES", "NL", "PL", "UA"],
   "homeassistant": "2023.8.0",
   "iot_class": ["Local Push"],
-  "type": "lovelace"
+  "type": "plugin"
 }
