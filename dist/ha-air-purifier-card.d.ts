@@ -1,8 +1,7 @@
 import { LitElement } from 'lit';
-import { HomeAssistant } from 'custom-card-helpers';
+import { HomeAssistant, LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from 'custom-card-helpers';
 import './editor';
-interface AirPurifierCardConfig extends LovelaceCardConfig {
-    type: string;
+export interface AirPurifierCardConfig extends LovelaceCardConfig {
     entity: string;
     name?: string;
     theme?: string;
@@ -18,11 +17,12 @@ interface AirPurifierCardConfig extends LovelaceCardConfig {
         buzzer?: boolean;
     };
 }
-export declare class HaAirPurifierCard extends LitElement {
+export declare class AirPurifierCard extends LitElement implements LovelaceCard {
     hass: HomeAssistant;
     private _config;
-    static getConfigElement(): HTMLElement;
+    static getConfigElement(): Promise<LovelaceCardEditor>;
     static getStubConfig(): object;
+    getCardSize(): number;
     setConfig(config: AirPurifierCardConfig): void;
     protected shouldUpdate(changedProps: Map<string, unknown>): boolean;
     private _handlePowerClick;
@@ -35,4 +35,3 @@ export declare class HaAirPurifierCard extends LitElement {
     protected render(): import("lit-html").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }
-export {};

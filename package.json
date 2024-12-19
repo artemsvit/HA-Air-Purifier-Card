@@ -1,5 +1,5 @@
 {
-  "name": "ha-air-purifier-card",
+  "name": "air-purifier-card",
   "version": "1.0.3",
   "description": "A beautiful card for Xiaomi Air Purifier MB3",
   "type": "module",
@@ -50,8 +50,8 @@
     "concurrently": "^8.2.2",
     "eslint": "^8.55.0",
     "http-server": "^14.1.1",
-    "rollup": "^4.7.0",
-    "rollup-plugin-serve": "^1.1.1",
+    "rollup": "^4.9.1",
+    "rollup-plugin-serve": "^2.0.2",
     "typescript": "^5.3.3"
   }
 }

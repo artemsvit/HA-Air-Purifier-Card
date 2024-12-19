@@ -1,83 +1,60 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant } from 'custom-card-helpers';
+import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant, fireEvent } from 'custom-card-helpers';
+import type { AirPurifierCardConfig } from './ha-air-purifier-card';
 
-@customElement('ha-air-purifier-card-editor')
-export class HaAirPurifierCardEditor extends LitElement {
+interface ExtendedHTMLElement extends HTMLElement {
+  configValue?: string;
+}
+
+@customElement('air-purifier-card-editor')
+export class AirPurifierCardEditor extends LitElement {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) private _config!: any;
+  @state() private _config!: AirPurifierCardConfig;
 
-  public setConfig(config: any): void {
-    this._config = {
-      show: {
-        name: true,
-        state: true,
-        temperature: true,
-        humidity: true,
-        speed: true,
-        filter_life: false,
-        light: false,
-        child_lock: false,
-        buzzer: false,
-      },
-      ...config,
-    };
+  public setConfig(config: AirPurifierCardConfig): void {
+    this._config = config;
   }
 
   private _valueChanged(ev: CustomEvent): void {
-    if (!this._config || !this.hass) return;
+    const target = ev.target as ExtendedHTMLElement;
+    if (!target) return;
 
-    const target = ev.target as any;
-    if (!target.configValue) return;
-
-    const value = target.checked !== undefined ? target.checked : target.value;
+    const value = (target as any).value;
     const configValue = target.configValue;
+    if (!configValue) return;
 
     if (configValue.includes('.')) {
-      const [section, key] = configValue.split('.');
+      const [object, key] = configValue.split('.');
       this._config = {
         ...this._config,
-        [section]: {
-          ...this._config[section],
-          [key]: value,
+        [object]: {
+          ...(this._config[object as keyof AirPurifierCardConfig] || {}),
+          [key]: target.hasAttribute('checked') ? (target as any).checked : value,
         },
       };
     } else {
       this._config = {
         ...this._config,
-        [configValue]: value,
+        [configValue]: target.hasAttribute('checked') ? (target as any).checked : value,
       };
     }
 
-    const event = new CustomEvent('config-changed', {
-      detail: { config: this._config },
-      bubbles: true,
-      composed: true,
-    });
-    this.dispatchEvent(event);
+    fireEvent(this, 'config-changed', { config: this._config });
   }
 
-  protected render() {
+  protected override render() {
     if (!this.hass || !this._config) {
       return html``;
     }
 
     const entities = Object.keys(this.hass.states).filter(
-      (eid) => eid.substr(0, 4) === 'fan.'
+      (eid) => eid.split('.')[0] === 'fan'
     );
 
     return html`
       <div class="card-config">
-        <div class="section">
-          <div class="row">
-            <ha-textfield
-              label="Name"
-              .value=${this._config.name || ''}
-              .configValue=${'name'}
-              @input=${this._valueChanged}
-            ></ha-textfield>
-          </div>
-
+        <div class="values">
           <div class="row">
             <ha-select
               label="Entity"
@@ -91,152 +68,114 @@ export class HaAirPurifierCardEditor extends LitElement {
               `)}
             </ha-select>
           </div>
-        </div>
 
-        <div class="section">
           <div class="row">
-            <span class="section-header">Display Options</span>
+            <ha-textfield
+              label="Name"
+              .value=${this._config.name || ''}
+              .configValue=${'name'}
+              @input=${this._valueChanged}
+            ></ha-textfield>
           </div>
 
           <div class="row">
-            <ha-formfield label="Show Name">
-              <ha-switch
-                .checked=${this._config.show?.name !== false}
-                .configValue=${'show.name'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
+            <div class="checkbox-group">
+              <ha-formfield label="Show Name">
+                <ha-switch
+                  .checked=${this._config.show?.name !== false}
+                  .configValue=${'show.name'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-          <div class="row">
-            <ha-formfield label="Show State Animation">
-              <ha-switch
-                .checked=${this._config.show?.state !== false}
-                .configValue=${'show.state'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
+              <ha-formfield label="Show State">
+                <ha-switch
+                  .checked=${this._config.show?.state !== false}
+                  .configValue=${'show.state'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-          <div class="row">
-            <ha-formfield label="Show Temperature">
-              <ha-switch
-                .checked=${this._config.show?.temperature !== false}
-                .configValue=${'show.temperature'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
+              <ha-formfield label="Show Temperature">
+                <ha-switch
+                  .checked=${this._config.show?.temperature !== false}
+                  .configValue=${'show.temperature'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-          <div class="row">
-            <ha-formfield label="Show Humidity">
-              <ha-switch
-                .checked=${this._config.show?.humidity !== false}
-                .configValue=${'show.humidity'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
+              <ha-formfield label="Show Humidity">
+                <ha-switch
+                  .checked=${this._config.show?.humidity !== false}
+                  .configValue=${'show.humidity'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-          <div class="row">
-            <ha-formfield label="Show Speed">
-              <ha-switch
-                .checked=${this._config.show?.speed !== false}
-                .configValue=${'show.speed'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
+              <ha-formfield label="Show Speed">
+                <ha-switch
+                  .checked=${this._config.show?.speed !== false}
+                  .configValue=${'show.speed'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-          <div class="row">
-            <ha-formfield label="Show Filter Life">
-              <ha-switch
-                .checked=${this._config.show?.filter_life === true}
-                .configValue=${'show.filter_life'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-        </div>
+              <ha-formfield label="Show Filter Life">
+                <ha-switch
+                  .checked=${this._config.show?.filter_life !== false}
+                  .configValue=${'show.filter_life'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-        <div class="section">
-          <div class="row">
-            <span class="section-header">Control Options</span>
-          </div>
+              <ha-formfield label="Show Light">
+                <ha-switch
+                  .checked=${this._config.show?.light !== false}
+                  .configValue=${'show.light'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-          <div class="row">
-            <ha-formfield label="Show Light Control">
-              <ha-switch
-                .checked=${this._config.show?.light === true}
-                .configValue=${'show.light'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
+              <ha-formfield label="Show Child Lock">
+                <ha-switch
+                  .checked=${this._config.show?.child_lock !== false}
+                  .configValue=${'show.child_lock'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
 
-          <div class="row">
-            <ha-formfield label="Show Child Lock">
-              <ha-switch
-                .checked=${this._config.show?.child_lock === true}
-                .configValue=${'show.child_lock'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
-          </div>
-
-          <div class="row">
-            <ha-formfield label="Show Buzzer">
-              <ha-switch
-                .checked=${this._config.show?.buzzer === true}
-                .configValue=${'show.buzzer'}
-                @change=${this._valueChanged}
-              ></ha-switch>
-            </ha-formfield>
+              <ha-formfield label="Show Buzzer">
+                <ha-switch
+                  .checked=${this._config.show?.buzzer !== false}
+                  .configValue=${'show.buzzer'}
+                  @change=${this._valueChanged}
+                ></ha-switch>
+              </ha-formfield>
+            </div>
           </div>
         </div>
       </div>
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
-      .card-config {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
+      .values {
+        padding: 16px;
       }
-
-      .section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .section-header {
-        font-size: 16px;
-        font-weight: 500;
-        color: var(--primary-text-color);
-        border-bottom: 1px solid var(--divider-color);
-        padding-bottom: 8px;
-      }
-
       .row {
-        display: flex;
-        align-items: center;
-        padding: 0 16px;
+        margin-bottom: 16px;
       }
-
-      ha-textfield {
-        width: 100%;
+      .checkbox-group {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 8px;
       }
-
       ha-select {
         width: 100%;
       }
-
-      ha-formfield {
+      ha-textfield {
         width: 100%;
-        --mdc-typography-body2-font-size: 14px;
       }
     `;
   }

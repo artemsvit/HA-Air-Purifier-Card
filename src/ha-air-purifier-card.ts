@@ -1,18 +1,23 @@
 import { LitElement, html, css } from 'lit';
-import { customElement, property } from 'lit/decorators.js';
-import { HomeAssistant, hasConfigOrEntityChanged } from 'custom-card-helpers';
-import { mdiPower, mdiLightbulb, mdiFan, mdiSpeedometer, mdiWaterPercent, mdiThermometer, mdiAirFilter, mdiLockOutline, mdiVolumeHigh } from '@mdi/js';
+import { customElement, property, state } from 'lit/decorators.js';
+import { HomeAssistant, hasConfigOrEntityChanged, LovelaceCardEditor, LovelaceCard, LovelaceCardConfig } from 'custom-card-helpers';
+import { mdiPower, mdiLightbulb, mdiFan, mdiWaterPercent, mdiThermometer, mdiAirFilter, mdiLockOutline, mdiVolumeHigh } from '@mdi/js';
 import './editor';
+
+console.info(
+  '%c AIR-PURIFIER-CARD %c 1.0.3 ',
+  'color: white; background: #555555; font-weight: 700;',
+  'color: white; background: #00ff00; font-weight: 700;',
+);
 
 (window as any).customCards = (window as any).customCards || [];
 (window as any).customCards.push({
-  type: 'ha-air-purifier-card',
+  type: 'air-purifier-card',
   name: 'Xiaomi Air Purifier Card',
   description: 'A beautiful card for Xiaomi Air Purifier MB3',
 });
 
-interface AirPurifierCardConfig extends LovelaceCardConfig {
-  type: string;
+export interface AirPurifierCardConfig extends LovelaceCardConfig {
   entity: string;
   name?: string;
   theme?: string;
@@ -43,12 +48,7 @@ const DEFAULT_CONFIG: Partial<AirPurifierCardConfig> = {
   },
 };
 
-const PRESET_MODES = {
-  Auto: 'Auto',
-  Sleep: 'Sleep',
-  Favorite: 'Favorite',
-  None: 'None'
-} as const;
+const PRESET_MODES = ['Auto', 'Sleep', 'Favorite', 'None'] as const;
 
 const SPEED_LEVELS = {
   Silent: { name: 'Silent', percentage: 25, rpm: '300-400' },
@@ -57,27 +57,18 @@ const SPEED_LEVELS = {
   High: { name: 'High', percentage: 100, rpm: '600-800' }
 } as const;
 
-function getPM25Color(value: number): string {
-  if (value <= 12) return 'var(--success-color, #43a047)';
-  if (value <= 35.4) return 'var(--warning-color, #ffa600)';
-  if (value <= 55.4) return 'var(--warning-color, #ffa600)';
-  if (value <= 150.4) return 'var(--error-color, #db4437)';
-  if (value <= 250.4) return 'var(--error-color, #db4437)';
-  return 'var(--error-color, #db4437)';
-}
-
-@customElement('ha-air-purifier-card')
-export class HaAirPurifierCard extends LitElement {
+@customElement('air-purifier-card')
+export class AirPurifierCard extends LitElement implements LovelaceCard {
   @property({ attribute: false }) public hass!: HomeAssistant;
-  @property({ attribute: false }) private _config!: AirPurifierCardConfig;
+  @state() private _config!: AirPurifierCardConfig;
 
-  public static getConfigElement() {
-    return document.createElement('ha-air-purifier-card-editor');
+  public static async getConfigElement(): Promise<LovelaceCardEditor> {
+    await import('./editor');
+    return document.createElement('air-purifier-card-editor') as LovelaceCardEditor;
   }
 
   public static getStubConfig(): object {
     return {
-      type: 'custom:ha-air-purifier-card',
       entity: 'fan.xiaomi_air_purifier',
       show: {
         name: true,
@@ -91,6 +82,10 @@ export class HaAirPurifierCard extends LitElement {
         buzzer: false,
       },
     };
+  }
+
+  public getCardSize(): number {
+    return 3;
   }
 
   public setConfig(config: AirPurifierCardConfig): void {
@@ -108,7 +103,7 @@ export class HaAirPurifierCard extends LitElement {
     };
   }
 
-  protected shouldUpdate(changedProps: Map<string, unknown>): boolean {
+  protected override shouldUpdate(changedProps: Map<string, unknown>): boolean {
     if (changedProps.has('_config')) {
       return true;
     }
@@ -194,7 +189,7 @@ export class HaAirPurifierCard extends LitElement {
     return speedLevel;
   }
 
-  protected render() {
+  protected override render() {
     if (!this.hass || !this._config) {
       return html``;
     }
@@ -245,11 +240,11 @@ export class HaAirPurifierCard extends LitElement {
               <div class="mode-select">
                 <ha-select
                   .value=${currentMode}
-                  @selected=${this._handleModeChange}
+                  @change=${this._handleModeChange}
                   class="mode-dropdown"
                 >
-                  ${Object.entries(PRESET_MODES).map(([mode, value]) => html`
-                    <mwc-list-item .value=${value}>${mode}</mwc-list-item>
+                  ${PRESET_MODES.map((mode) => html`
+                    <mwc-list-item .value=${mode}>${mode}</mwc-list-item>
                   `)}
                 </ha-select>
               </div>
@@ -314,13 +309,6 @@ export class HaAirPurifierCard extends LitElement {
                   </div>
                 ` : ''}
 
-                ${this._config.show?.speed !== false ? html`
-                  <div class="info-item">
-                    <ha-svg-icon .path=${mdiFan}></ha-svg-icon>
-                    <span>${motorSpeed} RPM</span>
-                  </div>
-                ` : ''}
-
                 ${this._config.show?.filter_life !== false ? html`
                   <div class="info-item">
                     <ha-svg-icon .path=${mdiAirFilter}></ha-svg-icon>
@@ -329,58 +317,54 @@ export class HaAirPurifierCard extends LitElement {
                 ` : ''}
               </div>
             </div>
-          ` : ''}
+          ` : html`
+            <div class="power-button">
+              <ha-icon-button
+                class="action-button"
+                .path=${mdiPower}
+                @click=${this._handlePowerClick}
+                .label=${'Power'}
+              ></ha-icon-button>
+            </div>
+          `}
         </div>
       </ha-card>
     `;
   }
 
-  static get styles() {
+  static override get styles() {
     return css`
       :host {
-        --circle-size: 150px;
-        --circle-background: rgba(var(--rgb-primary-color), 0.1);
-        --circle-active-background: rgba(var(--rgb-primary-color), 0.2);
-        --button-active-background: rgba(var(--rgb-primary-color), 0.2);
-        --circle-border-size: 4px;
+        --circle-size: 120px;
+        --circle-background-color: var(--card-background-color, #fff);
+        --circle-color: var(--primary-color, #03a9f4);
+        --circle-border-color: var(--divider-color, #e0e0e0);
       }
 
       .air-purifier-card {
-        background: var(--ha-card-background, var(--card-background-color, white));
-        border-radius: var(--ha-card-border-radius, 12px);
-        box-shadow: var(--ha-card-box-shadow, none);
-        color: var(--primary-text-color);
         padding: 16px;
-        width: 100%;
       }
 
       .content {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
+        padding: 16px;
       }
 
       .circle-container {
-        position: relative;
-        width: var(--circle-size);
-        height: var(--circle-size);
-        margin: 16px 0;
+        display: flex;
+        justify-content: center;
+        margin-bottom: 16px;
       }
 
       .circle {
         position: relative;
-        width: 100%;
-        height: 100%;
+        width: var(--circle-size);
+        height: var(--circle-size);
         border-radius: 50%;
-        background: var(--circle-background);
+        background: var(--circle-background-color);
+        border: 2px solid var(--circle-border-color);
         display: flex;
         align-items: center;
         justify-content: center;
-        overflow: hidden;
-      }
-
-      .active .circle {
-        background: var(--circle-active-background);
       }
 
       .circle-info {
@@ -388,34 +372,41 @@ export class HaAirPurifierCard extends LitElement {
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        text-align: center;
         z-index: 1;
       }
 
       .pm25-value {
-        font-size: 2.5em;
+        font-size: 24px;
         font-weight: bold;
-        line-height: 1;
+        line-height: 1.2;
       }
 
       .pm25-label {
-        font-size: 0.9em;
+        font-size: 12px;
         opacity: 0.8;
-        margin-top: 4px;
       }
 
       .circle-animation {
         position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        border: var(--circle-border-size) solid var(--primary-color);
+        top: -2px;
+        left: -2px;
+        right: -2px;
+        bottom: -2px;
+        border: 2px solid var(--circle-color);
         border-radius: 50%;
+        border-left-color: transparent;
+        border-right-color: transparent;
         animation: rotate 2s linear infinite;
       }
 
+      @keyframes rotate {
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
       .controls {
-        width: 100%;
         display: flex;
         flex-direction: column;
         gap: 16px;
@@ -427,30 +418,21 @@ export class HaAirPurifierCard extends LitElement {
 
       .mode-dropdown {
         width: 100%;
-        --mdc-theme-primary: var(--primary-color);
-        --mdc-select-fill-color: var(--secondary-background-color);
-        border-radius: var(--ha-card-border-radius, 12px);
       }
 
       .button-row {
         display: flex;
-        justify-content: space-around;
+        justify-content: center;
         flex-wrap: wrap;
         gap: 8px;
-        padding: 8px;
-        background: var(--secondary-background-color);
-        border-radius: var(--ha-card-border-radius, 12px);
       }
 
       .action-button {
-        --mdc-icon-button-size: 48px;
-        color: var(--primary-text-color);
-        transition: background-color 0.2s;
-        border-radius: 50%;
+        --mdc-icon-button-size: 42px;
+        color: var(--secondary-text-color);
       }
 
       .action-button.active {
-        background: var(--button-active-background);
         color: var(--primary-color);
       }
 
@@ -459,26 +441,43 @@ export class HaAirPurifierCard extends LitElement {
         justify-content: space-around;
         flex-wrap: wrap;
         gap: 16px;
-        width: 100%;
-        padding: 8px;
-        background: var(--secondary-background-color);
-        border-radius: var(--ha-card-border-radius, 12px);
       }
 
       .info-item {
         display: flex;
         align-items: center;
-        gap: 8px;
-        color: var(--primary-text-color);
+        gap: 4px;
       }
 
-      @keyframes rotate {
-        from {
-          transform: rotate(0deg);
-        }
-        to {
-          transform: rotate(360deg);
-        }
+      .power-button {
+        display: flex;
+        justify-content: center;
+        margin-top: 16px;
+      }
+
+      ha-icon-button {
+        position: relative;
+      }
+
+      ha-icon-button::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        border-radius: 50%;
+        background: currentColor;
+        opacity: 0;
+        transition: opacity 0.2s ease-in-out;
+      }
+
+      ha-icon-button:hover::before {
+        opacity: 0.1;
+      }
+
+      ha-icon-button:active::before {
+        opacity: 0.2;
       }
     `;
   }
