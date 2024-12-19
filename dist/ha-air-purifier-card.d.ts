@@ -1,25 +1,29 @@
 import { LitElement } from 'lit';
 import { HomeAssistant } from 'custom-card-helpers';
 import './editor';
-interface Config {
+interface AirPurifierCardConfig extends LovelaceCardConfig {
     type: string;
     entity: string;
     name?: string;
-    show_animation?: boolean;
-    show_speed?: boolean;
-    show_humidity?: boolean;
-    show_temperature?: boolean;
-    show_filter_life?: boolean;
-    show_light_control?: boolean;
-    show_child_lock?: boolean;
-    show_buzzer?: boolean;
+    theme?: string;
+    show?: {
+        name?: boolean;
+        state?: boolean;
+        temperature?: boolean;
+        humidity?: boolean;
+        speed?: boolean;
+        filter_life?: boolean;
+        light?: boolean;
+        child_lock?: boolean;
+        buzzer?: boolean;
+    };
 }
 export declare class HaAirPurifierCard extends LitElement {
     hass: HomeAssistant;
-    private config;
+    private _config;
     static getConfigElement(): HTMLElement;
     static getStubConfig(): object;
-    setConfig(config: Config): void;
+    setConfig(config: AirPurifierCardConfig): void;
     protected shouldUpdate(changedProps: Map<string, unknown>): boolean;
     private _handlePowerClick;
     private _handleSpeedClick;
@@ -27,6 +31,7 @@ export declare class HaAirPurifierCard extends LitElement {
     private _handleChildLockToggle;
     private _handleLightToggle;
     private _handleBuzzerToggle;
+    private _getSpeedLevel;
     protected render(): import("lit").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }
