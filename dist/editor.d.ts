@@ -5,6 +5,6 @@ export declare class HaAirPurifierCardEditor extends LitElement {
     private _config;
     setConfig(config: any): void;
     private _valueChanged;
-    protected render(): import("lit").TemplateResult<1>;
+    protected render(): import("lit-html").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }

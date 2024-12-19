@@ -97,13 +97,22 @@ export class HaAirPurifierCard extends LitElement {
     if (!config.entity || config.entity.split('.')[0] !== 'fan') {
       throw new Error('Specify an entity from within the fan domain.');
     }
+
     this._config = {
-      show: DEFAULT_CONFIG.show,
+      ...DEFAULT_CONFIG,
       ...config,
+      show: {
+        ...DEFAULT_CONFIG.show,
+        ...(config.show || {}),
+      },
     };
   }
 
   protected shouldUpdate(changedProps: Map<string, unknown>): boolean {
+    if (changedProps.has('_config')) {
+      return true;
+    }
+
     return hasConfigOrEntityChanged(this, changedProps, false);
   }
 

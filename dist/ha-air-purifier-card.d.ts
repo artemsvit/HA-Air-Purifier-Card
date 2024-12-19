@@ -32,7 +32,7 @@ export declare class HaAirPurifierCard extends LitElement {
     private _handleLightToggle;
     private _handleBuzzerToggle;
     private _getSpeedLevel;
-    protected render(): import("lit").TemplateResult<1>;
+    protected render(): import("lit-html").TemplateResult<1>;
     static get styles(): import("lit").CSSResult;
 }
 export {};

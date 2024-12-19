@@ -1,7 +1,7 @@
 import typescript from '@rollup/plugin-typescript';
 import resolve from '@rollup/plugin-node-resolve';
 import babel from '@rollup/plugin-babel';
-import { terser } from 'rollup-plugin-terser';
+import terser from '@rollup/plugin-terser';
 import serve from 'rollup-plugin-serve';
 
 const dev = process.env.ROLLUP_WATCH;
@@ -22,6 +22,7 @@ export default {
     dir: 'dist',
     format: 'es',
     entryFileNames: 'ha-air-purifier-card.js',
+    sourcemap: true
   },
   plugins: [
     resolve(),
@@ -40,4 +41,10 @@ export default {
     }),
     dev && serve(serveopts),
   ],
+  external: [
+    'lit',
+    'lit/decorators.js',
+    'custom-card-helpers',
+    '@mdi/js'
+  ]
 };

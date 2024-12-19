@@ -83,7 +83,7 @@ export class HaAirPurifierCardEditor extends LitElement {
               label="Entity"
               .value=${this._config.entity}
               .configValue=${'entity'}
-              @selected=${this._valueChanged}
+              @change=${this._valueChanged}
               required
             >
               ${entities.map((entity) => html`
