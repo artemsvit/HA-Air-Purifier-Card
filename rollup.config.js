@@ -21,15 +21,23 @@ export default {
   output: {
     dir: 'dist',
     format: 'es',
+    entryFileNames: 'ha-air-purifier-card.js',
   },
   plugins: [
     resolve(),
-    typescript(),
+    typescript({
+      declaration: true,
+      declarationDir: 'dist',
+    }),
     babel({
       babelHelpers: 'bundled',
       exclude: 'node_modules/**',
     }),
-    !dev && terser(),
+    !dev && terser({
+      format: {
+        comments: false,
+      },
+    }),
     dev && serve(serveopts),
   ],
 };
